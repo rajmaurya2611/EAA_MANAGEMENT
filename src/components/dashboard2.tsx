@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Table } from "antd";
-import type { TableColumnsType, TableProps } from "antd";
+import type { TableColumnsType } from "antd";
 import { getDatabase, ref, onValue, off, DataSnapshot } from "firebase/database";
 import CryptoJS from "crypto-js";
 
-const AES_SECRET_KEY = "A1B2C3D4E5F6G7H8"; // Must match Android encryption key
-
-const SKIP_DECRYPTION_FIELDS = new Set(["RegistrationDate", "RegistrationTime", "profilePic"]);
+const AES_SECRET_KEY = import.meta.env.VITE_AES_SECRET_KEY
+ // Must match Android encryption key
 
 const decryptAES = (encryptedText: string) => {
   try {
@@ -38,7 +37,6 @@ interface UserData {
 
 const UserDashboard: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     const db = getDatabase();
@@ -113,15 +111,6 @@ const UserDashboard: React.FC = () => {
     },
   ];
   
-  const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
-    console.log("Selected Row Keys: ", newSelectedRowKeys);
-    setSelectedRowKeys(newSelectedRowKeys);
-  };
-
-  const rowSelection: TableProps<UserData>["rowSelection"] = {
-    selectedRowKeys,
-    onChange: onSelectChange,
-  };
 
   return (
     <div className="p-6">
