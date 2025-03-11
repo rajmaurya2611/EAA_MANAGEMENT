@@ -6,7 +6,6 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import Dashboard from '../components/dashboard';
-import Dashboard2 from '../components/Users/usersDashboard';
 import Users from './Users';
 
 const App = () => {
