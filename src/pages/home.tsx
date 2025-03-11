@@ -60,7 +60,7 @@ const App = () => {
           >
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </button>
-          <div className="font-semibold">Header</div>
+          <div className="font-semibold">Headers</div>
           <div></div>
         </header>
 
