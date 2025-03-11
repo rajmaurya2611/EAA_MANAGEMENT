@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useState } from 'react';
 import {
   MenuFoldOutlined,
@@ -7,7 +6,8 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import Dashboard from '../components/dashboard';
-import Dashboard2 from '../components/dashboard2';
+import Dashboard2 from '../components/Users/usersDashboard';
+import Users from './Users';
 
 const App = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -16,7 +16,7 @@ const App = () => {
   // Array of nav items with keys "dashboard" and "dashboard2"
   const navItems = [
     { key: 'dashboard', label: 'dashboard', icon: <UserOutlined /> },
-    { key: 'dashboard2', label: 'dashboard2', icon: <VideoCameraOutlined /> },
+    { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
   ];
 
   return (
@@ -67,7 +67,7 @@ const App = () => {
         {/* Content */}
         <main className="flex-1 bg-gray-50 overflow-auto p-6">
           {activeView === 'dashboard' && <Dashboard />}
-          {activeView === 'dashboard2' && <Dashboard2 />}
+          {activeView === 'Users' && <Users />}
         </main>
       </div>
     </div>
