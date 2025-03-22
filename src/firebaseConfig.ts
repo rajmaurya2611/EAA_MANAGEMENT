@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage"; // Import Firebase Storage
 
 // Firebase configuration using Vite environment variables
 const firebaseConfig = {
@@ -15,6 +16,10 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getDatabase(app);
+
+// Export Firebase services for use in other parts of your application
+export const auth = getAuth(app); // Firebase Authentication
+export const db = getDatabase(app); // Firebase Realtime Database
+export const storage = getStorage(app); // Firebase Storage
