@@ -12,7 +12,7 @@ const Template1: React.FC = () => {
   const [rank, setRank] = useState<number>(1); // Default rank
   const [isActive, setIsActive] = useState<boolean>(true); // Default is active
   const [link, setLink] = useState<string>(''); // Store the link entered by the user
-  const [loading, setLoading] = useState<boolean>(false);
+  const [,setLoading] = useState<boolean>(false);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // Flag to check if form is submitted
   const [form] = Form.useForm(); // Ant Design Form instance
 
