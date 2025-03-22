@@ -1,76 +1,98 @@
 import { useState } from 'react';
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  UserOutlined,
-  VideoCameraOutlined,
-} from '@ant-design/icons';
+import { UserOutlined, VideoCameraOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
 import Users from './Users';
+import Carousel from './Carousel'; // Assume you have a Carousel component
 
-const App = () => {
+const { Content, Sider } = Layout;
+const { SubMenu } = Menu;
+
+const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeView, setActiveView] = useState('dashboard'); // default view
+  const [activeView, setActiveView] = useState('dashboard'); // Default view
 
-  // Array of nav items with keys "dashboard" and "dashboard2"
+  const {
+    token: { colorBgContainer },
+  } = theme.useToken();
+
   const navItems = [
-    { key: 'dashboard', label: 'dashboard', icon: <UserOutlined /> },
+    { key: 'dashboard', label: 'Dashboard', icon: <UserOutlined /> },
     { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
+    { key: 'Homepage', label: 'Homepage', icon: <VideoCameraOutlined />, children: [
+      { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
+    ]}
   ];
 
+  const handleMenuClick = (key: string) => {
+    if (key === 'Homepage') {
+      setActiveView('carousel'); // Default to 'carousel' view when "Homepage" is clicked
+    } else {
+      setActiveView(key); // Otherwise, set the active view to the clicked menu item
+    }
+  };
+
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside
-        className={`bg-gray-800 text-white transition-all duration-300 ${
-          collapsed ? 'w-16' : 'w-64'
-        } flex flex-col`}
+    <Layout style={{ minHeight: '100vh' }}>
+      {/* Sidebar with scroll */}
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        style={{ overflowY: 'auto' }} // Make sidebar scrollable
       >
-        <div className="p-4">
-          <h1 className="text-center text-xl font-bold">
-            {!collapsed ? 'Logo' : 'L'}
-          </h1>
-        </div>
-        <nav className="flex-1">
-          <ul>
-            {navItems.map((item) => (
-              <li
-                key={item.key}
-                onClick={() => setActiveView(item.key)}
-                className={`flex items-center p-4 cursor-pointer hover:bg-gray-700 ${
-                  activeView === item.key ? 'bg-gray-700' : ''
-                }`}
-              >
-                {item.icon}
-                {!collapsed && <span className="ml-2 capitalize">{item.label}</span>}
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
+        <div className="demo-logo-vertical" />
+        <Menu
+          theme="dark"
+          defaultSelectedKeys={['dashboard']}
+          mode="inline"
+          onClick={({ key }) => handleMenuClick(key)}
+        >
+          {navItems.map((item) => (
+            item.children ? (
+              <SubMenu key={item.key} icon={item.icon} title={item.label}>
+                {item.children.map((subItem) => (
+                  <Menu.Item key={subItem.key} icon={subItem.icon}>
+                    {subItem.label}
+                  </Menu.Item>
+                ))}
+              </SubMenu>
+            ) : (
+              <Menu.Item key={item.key} icon={item.icon}>
+                {item.label}
+              </Menu.Item>
+            )
+          ))}
+        </Menu>
+      </Sider>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="flex items-center justify-between bg-gray-100 p-4 border-b border-gray-300">
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-xl focus:outline-none"
-          >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          </button>
-          <div className="font-semibold">Headers</div>
-          <div></div>
-        </header>
-
+      <Layout>
         {/* Content */}
-        <main className="flex-1 bg-gray-50 overflow-auto p-6">
-          {activeView === 'dashboard' && <Dashboard />}
-          {activeView === 'Users' && <Users />}
-        </main>
-      </div>
-    </div>
+        <Content
+          style={{
+            margin: '0',
+            paddingTop: 0, // Add some padding at the top if needed
+            overflowY: 'auto', // Allow scrolling
+            height: '100vh', // Subtract height of the Header
+          }}
+        >
+          <div
+            style={{
+              padding: 0,
+              minHeight: 360,
+              background: colorBgContainer,
+              overflowY: 'auto', // Enable scrolling within content if necessary
+              maxHeight: '100vh', // Ensure content doesn't overflow past the page
+            }}
+          >
+            {activeView === 'dashboard' && <Dashboard />}
+            {activeView === 'Users' && <Users />}
+            {activeView === 'carousel' && <Carousel />} {/* Render Carousel by default */}
+          </div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
 
-export default App;
+export default Home;
