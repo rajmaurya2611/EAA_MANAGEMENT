@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Input, Switch, Upload, Form, message } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Button, Input, Switch, Upload, Form, message, Progress, Modal } from 'antd';
+import { UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { storage, db } from '../../firebaseConfig'; // Import storage and db from firebaseConfig
 import { ref as dbRef, push, set } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 
 const { Dragger } = Upload;
 
@@ -12,27 +12,54 @@ const Template1: React.FC = () => {
   const [rank, setRank] = useState<number>(1); // Default rank
   const [isActive, setIsActive] = useState<boolean>(true); // Default is active
   const [link, setLink] = useState<string>(''); // Store the link entered by the user
-  const [,setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // Flag to check if form is submitted
+  const [progress, setProgress] = useState<number>(0); // Track upload progress
+  const [, setUploadTask] = useState<any>(null); // To track the upload task
+  const [uploadDate, setUploadDate] = useState<string>(''); // Store date when Done is clicked
+  const [uploadTime, setUploadTime] = useState<string>(''); // Store time when Done is clicked
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false); // To toggle success modal visibility
   const [form] = Form.useForm(); // Ant Design Form instance
 
-  // Handle image upload
+  // Handle image upload with MIME type enforcement and progress bar
   const handleImageUpload = async (file: any) => {
-    const storageRefPath = storageRef(storage, `carousels/${file.name}`);
+    // Validate the file type (JPEG or PNG)
+    const isValidImage = file.type === 'image/jpeg' || file.type === 'image/png';
+    if (!isValidImage) {
+      message.error('You can only upload JPEG or PNG images!');
+      return false; // Prevent upload if the type is not JPEG or PNG
+    }
+
     setLoading(true);
 
-    try {
-      // Upload image to Firebase Storage
-      await uploadBytes(storageRefPath, file.originFileObj as Blob); // Using the uploaded file
-      // Get the download URL after successful upload
-      const downloadURL = await getDownloadURL(storageRefPath);
+    // Create a reference to Firebase Storage
+    const storagePath = storageRef(storage, `carousels/${file.name}`);
+    const metadata = { contentType: file.type }; // Use the same content type for the file
+
+    // Create an upload task with progress monitoring
+    const upload = uploadBytesResumable(storagePath, file, metadata);
+    setUploadTask(upload);
+
+    // Track upload progress
+    upload.on('state_changed', (snapshot) => {
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      setProgress(progress); // Update progress state
+    }, () => {
+      message.error('Failed to upload image');
+      setLoading(false);
+    }, async () => {
+      // On successful upload, get the download URL
+      const downloadURL = await getDownloadURL(upload.snapshot.ref);
       setImageUrl(downloadURL); // Set the image URL
       message.success('Image uploaded successfully!');
-    } catch (error) {
-      message.error('Failed to upload image');
-    } finally {
       setLoading(false);
-    }
+    });
+  };
+
+  // Handle image deletion
+  const handleDeleteImage = () => {
+    setImageUrl(''); // Clear the image URL
+    setProgress(0); // Reset progress
   };
 
   // Validate the URL
@@ -47,6 +74,11 @@ const Template1: React.FC = () => {
 
   // Handle Done button click
   const handleDone = async () => {
+    // Get current date and time when the "Done" button is clicked
+    const currentDate = new Date();
+    setUploadDate(currentDate.toLocaleDateString()); // Store the current date
+    setUploadTime(currentDate.toLocaleTimeString()); // Store the current time
+
     // Validate the URL entered by the user
     if (!isValidUrl(link)) {
       message.error('Please enter a valid URL.');
@@ -55,30 +87,45 @@ const Template1: React.FC = () => {
 
     const carouselRef = dbRef(db, 'version12/Carousel');
     const newItemRef = push(carouselRef); // Create a unique ID for the new item
-    
-    // Store the data
+
+    // Store the data, including the timestamp (date and time)
     const itemData = {
       image: imageUrl,
       isActive,
       link, // Use the user-entered link
       rank,
       type: 'direct', // Default type is 'direct'
+      date: uploadDate, // Store the date
+      time: uploadTime, // Store the time
     };
-    
+
     try {
       // Save data to Firebase Realtime Database
       await set(newItemRef, itemData);
-      message.success('Item saved successfully!');
+      setShowSuccessModal(true); // Show the success modal
 
       // Reset the form after successful submission
       setTimeout(() => {
         form.resetFields();
         setImageUrl('');
+        setProgress(0);
         setFormSubmitted(false); // Reset form submission flag
       }, 1000); // Clear form after 1 second delay
     } catch (error) {
       message.error('Failed to save item');
     }
+  };
+
+  // Handle Cancel button click (Reset the form)
+  const handleCancel = () => {
+    form.resetFields();
+    setImageUrl('');
+    setProgress(0);
+    setLink('');
+    setRank(1);
+    setIsActive(true);
+    setUploadDate('');
+    setUploadTime('');
   };
 
   return (
@@ -103,14 +150,33 @@ const Template1: React.FC = () => {
           </Dragger>
         </Form.Item>
 
+        {/* Show progress bar during upload */}
+        {loading && <Progress percent={progress} />}
+
+        {/* Show the uploaded image */}
+        {imageUrl && (
+          <div>
+            <img
+              src={imageUrl}
+              alt="Uploaded"
+              style={{ maxWidth: '50%', maxHeight: '600px', marginBottom: '20px' }} // Limit width and height
+            />
+            <Button icon={<CloseCircleOutlined />} onClick={handleDeleteImage} type="link" danger>
+              Delete Image
+            </Button>
+          </div>
+        )}
+
         {/* Image URL field that gets updated after image upload */}
-        <Form.Item label="Image URL">
-          <Input
-            value={imageUrl} // Bind image URL to input field
-            placeholder="Image URL will appear here"
-            disabled // Make the field read-only
-          />
-        </Form.Item>
+        {imageUrl && (
+          <Form.Item label="Image URL">
+            <Input
+              value={imageUrl} // Bind image URL to input field
+              placeholder="Image URL will appear here"
+              disabled // Make the field read-only
+            />
+          </Form.Item>
+        )}
 
         {/* Rank input */}
         <Form.Item label="Rank" name="rank" rules={[{ required: true, message: 'Please enter rank' }]}>
@@ -145,8 +211,26 @@ const Template1: React.FC = () => {
           >
             Done
           </Button>
+          <Button onClick={handleCancel} type="default" style={{ marginLeft: '10px' }}>
+            Cancel
+          </Button>
         </Form.Item>
       </Form>
+
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccessModal}
+        title="Success"
+        onOk={() => setShowSuccessModal(false)}
+        onCancel={() => setShowSuccessModal(false)}
+        footer={[
+          <Button key="ok" type="primary" onClick={() => setShowSuccessModal(false)}>
+            OK
+          </Button>,
+        ]}
+      >
+        <p>Your item has been saved successfully!</p>
+      </Modal>
     </div>
   );
 };
