@@ -27,10 +27,10 @@ function Login() {
         onSubmit={handleLogin} 
         className="bg-white p-8 rounded shadow-md w-full max-w-md"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Login<br></br>EAA Management System</h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <div className="mb-4">
-          <label className="block mb-1">Email</label>
+          <label className="block mb-1">Enter Your Email</label>
           <input 
             type="email"
             value={email}
@@ -41,7 +41,7 @@ function Login() {
           />
         </div>
         <div className="mb-6">
-          <label className="block mb-1">Password</label>
+          <label className="block mb-1">Enter Your Password</label>
           <input 
             type="password"
             value={password}
