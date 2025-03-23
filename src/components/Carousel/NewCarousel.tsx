@@ -2,6 +2,7 @@ import  { useState } from 'react';
 import { Layout, Menu } from 'antd';
 import Template1 from './Template1';
 import Template2 from './Template2';
+import Template3 from './Template3';
 
 const { Sider, Content } = Layout;
 
@@ -50,10 +51,7 @@ function NewCarousel() {
             )}
 
             {selectedTemplate === 'template3' && (
-              <div>
-                <h3>Template 3 Content</h3>
-                {/* Add content for Template 3 */}
-              </div>
+             <Template3/>
             )}
           </Content>
         </Layout>

@@ -9,124 +9,134 @@ const { Dragger } = Upload;
 
 const Template2: React.FC = () => {
   const [imageUrl, setImageUrl] = useState<string>(''); // Image URL to store
-  const [description, setDescription] = useState<string>(''); // HTML Description entered by the user
-  const [rank, setRank] = useState<number>(3); // Default rank (fixed value)
-  const [isActive, setIsActive] = useState<boolean>(true); // Default is active
-  const [link, setLink] = useState<string>(''); // Store the link entered by the user
+  const [description, setDescription] = useState<string>(''); // HTML Description
+  const [heading, setHeading] = useState<string>(''); // Heading
+  const [rank, setRank] = useState<number>(3); // Default rank
+  const [isActive, setIsActive] = useState<boolean>(true); // Active status
   const [loading, setLoading] = useState<boolean>(false);
-  const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // Flag to check if form is submitted
-  const [progress, setProgress] = useState<number>(0); // Track upload progress
-  const [, setUploadTask] = useState<any>(null); // To track the upload task
-  const [uploadTime, setUploadTime] = useState<string>(''); // Store date and time when Done is clicked
-  const [uploadDate, setUploadDate] = useState<string>(''); // Store date
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false); // To toggle success modal visibility
+  const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // Submission flag
+  const [progress, setProgress] = useState<number>(0); // Upload progress
+  const [, setUploadTask] = useState<any>(null); // Track upload task (not used further)
+  const [uploadDate, setUploadDate] = useState<string>(''); // Date when image is uploaded
+  const [uploadTime, setUploadTime] = useState<string>(''); // Time when image is uploaded
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false); // Toggle success modal
   const [form] = Form.useForm(); // Ant Design Form instance
 
   // Handle image upload with MIME type enforcement and progress bar
   const handleImageUpload = async (file: any) => {
-    // Validate the file type (JPEG or PNG)
+    // Validate file type (JPEG or PNG)
     const isValidImage = file.type === 'image/jpeg' || file.type === 'image/png';
     if (!isValidImage) {
       message.error('You can only upload JPEG or PNG images!');
-      return false; // Prevent upload if the type is not JPEG or PNG
+      return false;
     }
-
     setLoading(true);
 
     // Create a reference to Firebase Storage
     const storagePath = storageRef(storage, `carousels/${file.name}`);
-    const metadata = { contentType: file.type }; // Use the same content type for the file
+    const metadata = { contentType: file.type };
 
     // Create an upload task with progress monitoring
     const upload = uploadBytesResumable(storagePath, file, metadata);
     setUploadTask(upload);
 
-    // Track upload progress
     upload.on('state_changed', (snapshot) => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      setProgress(progress); // Update progress state
+      const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      setProgress(prog);
     }, () => {
       message.error('Failed to upload image');
       setLoading(false);
     }, async () => {
-      // On successful upload, get the download URL
+      // On successful upload, get download URL
       const downloadURL = await getDownloadURL(upload.snapshot.ref);
-      setImageUrl(downloadURL); // Set the image URL
+      setImageUrl(downloadURL);
       message.success('Image uploaded successfully!');
+
+      // Capture date and time immediately after successful image upload
+      const current = new Date();
+      setUploadDate(current.toLocaleDateString());
+      setUploadTime(current.toLocaleTimeString());
       setLoading(false);
     });
   };
 
   // Handle image deletion
   const handleDeleteImage = () => {
-    setImageUrl(''); // Clear the image URL
-    setProgress(0); // Reset progress
+    setImageUrl('');
+    setProgress(0);
   };
 
-  // Validate the URL
+  // (Optional) URL validation function – remove if not needed
   const isValidUrl = (url: string) => {
     try {
-      new URL(url); // This will throw if it's not a valid URL
+      new URL(url);
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   };
 
   // Handle Done button click
   const handleDone = async () => {
-    // Get current date and time when the "Done" button is clicked
-    const currentDate = new Date();
-    setUploadDate(currentDate.toLocaleDateString()); // Store the current date in the state
-    setUploadTime(currentDate.toLocaleTimeString()); // Store the current time in the state
-
-    // Validate the URL entered by the user
-    if (!isValidUrl(link)) {
-      message.error('Please enter a valid URL.');
+    if (!imageUrl) {
+      message.error('Please upload an image before submitting.');
+      return;
+    }
+    if (!heading) {
+      message.error('Please enter a heading.');
+      return;
+    }
+    if (!description) {
+      message.error('Please enter a description.');
       return;
     }
 
-    const carouselRef = dbRef(db, 'version12/Carousel');
-    const newItemRef = push(carouselRef); // Create a unique ID for the new item
+    // (If you needed to validate a link, you could do it here; Template2 does not use a link now)
 
-    // Store the data, including the timestamp
+    // Ensure that uploadDate and uploadTime are set
+    // (They should have been set during image upload; if not, capture them now)
+    const current = new Date();
+    const dateStr = uploadDate || current.toLocaleDateString();
+    const timeStr = uploadTime || current.toLocaleTimeString();
+
+    const carouselRef = dbRef(db, 'version12/Carousel');
+    const newItemRef = push(carouselRef);
+
     const itemData = {
       image: imageUrl,
-      description, // Add description field (HTML content)
+      description,  // HTML description content
+      heading,      // Heading text
       isActive,
-      link, // Use the user-entered link
       rank,
-      type: 'indirect', // Fixed type for Template 2
-      date: uploadDate, // Add the date field
-      time: uploadTime, // Add the time field
+      type: 'indirect', // Fixed type for Template2
+      date: dateStr,
+      time: timeStr,
     };
 
     try {
-      // Save data to Firebase Realtime Database
       await set(newItemRef, itemData);
-      setShowSuccessModal(true); // Show the success modal
-
+      setShowSuccessModal(true);
       // Reset the form after successful submission
       setTimeout(() => {
         form.resetFields();
         setImageUrl('');
         setProgress(0);
-        setFormSubmitted(false); // Reset form submission flag
-      }, 1000); // Clear form after 1 second delay
+        setFormSubmitted(false);
+      }, 1000);
     } catch (error) {
       message.error('Failed to save item');
     }
   };
 
-  // Handle Cancel button click (Reset the form)
+  // Handle Cancel button click (reset the form)
   const handleCancel = () => {
     form.resetFields();
     setImageUrl('');
     setProgress(0);
-    setLink('');
-    setRank(3); // Reset rank to the default value for Template 2
+    setRank(3);
     setIsActive(true);
     setDescription('');
+    setHeading('');
     setUploadDate('');
     setUploadTime('');
   };
@@ -136,15 +146,15 @@ const Template2: React.FC = () => {
       <h2>Template 2: Create Carousel Item</h2>
 
       <Form form={form} layout="vertical">
-        {/* Image upload */}
+        {/* Image Upload */}
         <Form.Item label="Image Upload">
           <Dragger
             beforeUpload={(file) => {
               handleImageUpload(file);
-              return false; // Prevent automatic upload
+              return false;
             }}
             showUploadList={false}
-            disabled={formSubmitted} // Disable upload after form submission
+            disabled={formSubmitted}
           >
             <p className="ant-upload-drag-icon">
               <UploadOutlined />
@@ -153,16 +163,16 @@ const Template2: React.FC = () => {
           </Dragger>
         </Form.Item>
 
-        {/* Show progress bar during upload */}
+        {/* Progress Bar */}
         {loading && <Progress percent={progress} />}
 
-        {/* Show the uploaded image */}
+        {/* Uploaded Image */}
         {imageUrl && (
           <div>
             <img
               src={imageUrl}
               alt="Uploaded"
-              style={{ maxWidth: '100%', maxHeight: '600px', marginBottom: '20px' }} // Limit width and height
+              style={{ maxWidth: '100%', maxHeight: '600px', marginBottom: '20px' }}
             />
             <Button icon={<CloseCircleOutlined />} onClick={handleDeleteImage} type="link" danger>
               Delete Image
@@ -170,19 +180,19 @@ const Template2: React.FC = () => {
           </div>
         )}
 
-        {/* Image URL field that gets updated after image upload */}
+        {/* Image URL (Read-Only) */}
         {imageUrl && (
           <Form.Item label="Image URL">
-            <Input
-              value={imageUrl} // Bind image URL to input field
-              placeholder="Image URL will appear here"
-              disabled // Make the field read-only
-            />
+            <Input value={imageUrl} placeholder="Image URL will appear here" disabled />
           </Form.Item>
         )}
 
-        {/* Description input */}
-        <Form.Item label="Description" name="description" rules={[{ required: true, message: 'Please enter a description' }]}>
+        {/* Description */}
+        <Form.Item
+          label="Description"
+          name="description"
+          rules={[{ required: true, message: 'Please enter a description' }]}
+        >
           <Input.TextArea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -191,7 +201,20 @@ const Template2: React.FC = () => {
           />
         </Form.Item>
 
-        {/* Rank input */}
+        {/* Heading */}
+        <Form.Item
+          label="Heading"
+          name="heading"
+          rules={[{ required: true, message: 'Please enter a heading' }]}
+        >
+          <Input
+            value={heading}
+            onChange={(e) => setHeading(e.target.value)}
+            placeholder="Enter a heading"
+          />
+        </Form.Item>
+
+        {/* Rank */}
         <Form.Item label="Rank" name="rank" rules={[{ required: true, message: 'Please enter rank' }]}>
           <Input
             type="number"
@@ -201,26 +224,17 @@ const Template2: React.FC = () => {
           />
         </Form.Item>
 
-        {/* Is Active toggle */}
+        {/* Is Active */}
         <Form.Item label="Is Active" name="isActive">
           <Switch checked={isActive} onChange={setIsActive} />
         </Form.Item>
 
-        {/* Link input (User-provided URL) */}
-        <Form.Item label="Link" name="link" rules={[{ required: true, message: 'Please enter a link' }]}>
-          <Input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="Enter a link"
-          />
-        </Form.Item>
-
-        {/* Done button */}
+        {/* Done and Cancel Buttons */}
         <Form.Item>
           <Button
             type="primary"
             onClick={handleDone}
-            disabled={!imageUrl || !rank || !link || formSubmitted} // Disable if no image or invalid data
+            disabled={!imageUrl || !rank || !description || !heading || formSubmitted}
           >
             Done
           </Button>
@@ -232,11 +246,15 @@ const Template2: React.FC = () => {
 
       {/* Success Modal */}
       <Modal
-        visible={showSuccessModal}
+        open={showSuccessModal}
         title="Success"
         onOk={() => setShowSuccessModal(false)}
         onCancel={() => setShowSuccessModal(false)}
-        footer={[<Button key="ok" type="primary" onClick={() => setShowSuccessModal(false)}>OK</Button>]}
+        footer={[
+          <Button key="ok" type="primary" onClick={() => setShowSuccessModal(false)}>
+            OK
+          </Button>,
+        ]}
       >
         <p>Your item has been saved successfully!</p>
       </Modal>

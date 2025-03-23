@@ -13,59 +13,68 @@ const Template1: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean>(true); // Default is active
   const [link, setLink] = useState<string>(''); // Store the link entered by the user
   const [loading, setLoading] = useState<boolean>(false);
-  const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // Flag to check if form is submitted
+  const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // Flag for form submission
   const [progress, setProgress] = useState<number>(0); // Track upload progress
   const [, setUploadTask] = useState<any>(null); // To track the upload task
-  const [uploadDate, setUploadDate] = useState<string>(''); // Store date when Done is clicked
-  const [uploadTime, setUploadTime] = useState<string>(''); // Store time when Done is clicked
-  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false); // To toggle success modal visibility
+  const [uploadDate, setUploadDate] = useState<string>(''); // Date when image is uploaded
+  const [uploadTime, setUploadTime] = useState<string>(''); // Time when image is uploaded
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false); // Toggle success modal
   const [form] = Form.useForm(); // Ant Design Form instance
 
   // Handle image upload with MIME type enforcement and progress bar
   const handleImageUpload = async (file: any) => {
-    // Validate the file type (JPEG or PNG)
+    // Validate file type (JPEG or PNG)
     const isValidImage = file.type === 'image/jpeg' || file.type === 'image/png';
     if (!isValidImage) {
       message.error('You can only upload JPEG or PNG images!');
-      return false; // Prevent upload if the type is not JPEG or PNG
+      return false;
     }
-
     setLoading(true);
 
     // Create a reference to Firebase Storage
     const storagePath = storageRef(storage, `carousels/${file.name}`);
-    const metadata = { contentType: file.type }; // Use the same content type for the file
+    const metadata = { contentType: file.type };
 
     // Create an upload task with progress monitoring
     const upload = uploadBytesResumable(storagePath, file, metadata);
     setUploadTask(upload);
 
-    // Track upload progress
-    upload.on('state_changed', (snapshot) => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      setProgress(progress); // Update progress state
-    }, () => {
-      message.error('Failed to upload image');
-      setLoading(false);
-    }, async () => {
-      // On successful upload, get the download URL
-      const downloadURL = await getDownloadURL(upload.snapshot.ref);
-      setImageUrl(downloadURL); // Set the image URL
-      message.success('Image uploaded successfully!');
-      setLoading(false);
-    });
+    upload.on(
+      'state_changed',
+      (snapshot) => {
+        const prog = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setProgress(prog);
+      },
+      () => {
+        message.error('Failed to upload image');
+        setLoading(false);
+      },
+      async () => {
+        // On successful upload, get the download URL
+        const downloadURL = await getDownloadURL(upload.snapshot.ref);
+        setImageUrl(downloadURL);
+
+        // Immediately capture the date and time after upload
+        const current = new Date();
+        setUploadDate(current.toLocaleDateString());
+        setUploadTime(current.toLocaleTimeString());
+
+        message.success('Image uploaded successfully!');
+        setLoading(false);
+      }
+    );
   };
 
   // Handle image deletion
   const handleDeleteImage = () => {
-    setImageUrl(''); // Clear the image URL
-    setProgress(0); // Reset progress
+    setImageUrl('');
+    setProgress(0);
   };
 
   // Validate the URL
   const isValidUrl = (url: string) => {
     try {
-      new URL(url); // This will throw if it's not a valid URL
+      new URL(url);
       return true;
     } catch (_) {
       return false;
@@ -74,49 +83,45 @@ const Template1: React.FC = () => {
 
   // Handle Done button click
   const handleDone = async () => {
-    // Get current date and time when the "Done" button is clicked
-    const currentDate = new Date();
-    setUploadDate(currentDate.toLocaleDateString()); // Store the current date
-    setUploadTime(currentDate.toLocaleTimeString()); // Store the current time
-
-    // Validate the URL entered by the user
+    if (!imageUrl) {
+      message.error('Please upload an image before submitting.');
+      return;
+    }
     if (!isValidUrl(link)) {
       message.error('Please enter a valid URL.');
       return;
     }
 
     const carouselRef = dbRef(db, 'version12/Carousel');
-    const newItemRef = push(carouselRef); // Create a unique ID for the new item
+    const newItemRef = push(carouselRef);
 
-    // Store the data, including the timestamp (date and time)
+    // Build the data object using the captured date and time
     const itemData = {
       image: imageUrl,
       isActive,
-      link, // Use the user-entered link
+      link,
       rank,
-      type: 'direct', // Default type is 'direct'
-      date: uploadDate, // Store the date
-      time: uploadTime, // Store the time
+      type: 'direct',
+      date: uploadDate,
+      time: uploadTime,
     };
 
     try {
-      // Save data to Firebase Realtime Database
       await set(newItemRef, itemData);
-      setShowSuccessModal(true); // Show the success modal
+      setShowSuccessModal(true);
 
-      // Reset the form after successful submission
       setTimeout(() => {
         form.resetFields();
         setImageUrl('');
         setProgress(0);
-        setFormSubmitted(false); // Reset form submission flag
-      }, 1000); // Clear form after 1 second delay
+        setFormSubmitted(false);
+      }, 1000);
     } catch (error) {
       message.error('Failed to save item');
     }
   };
 
-  // Handle Cancel button click (Reset the form)
+  // Handle Cancel button click (reset the form)
   const handleCancel = () => {
     form.resetFields();
     setImageUrl('');
@@ -133,15 +138,15 @@ const Template1: React.FC = () => {
       <h2>Template 1: Create Carousel Item</h2>
 
       <Form form={form} layout="vertical">
-        {/* Image upload */}
+        {/* Image Upload */}
         <Form.Item label="Image Upload">
           <Dragger
             beforeUpload={(file) => {
               handleImageUpload(file);
-              return false; // Prevent automatic upload
+              return false;
             }}
             showUploadList={false}
-            disabled={formSubmitted} // Disable upload after form submission
+            disabled={formSubmitted}
           >
             <p className="ant-upload-drag-icon">
               <UploadOutlined />
@@ -150,16 +155,16 @@ const Template1: React.FC = () => {
           </Dragger>
         </Form.Item>
 
-        {/* Show progress bar during upload */}
+        {/* Progress Bar */}
         {loading && <Progress percent={progress} />}
 
-        {/* Show the uploaded image */}
+        {/* Uploaded Image */}
         {imageUrl && (
           <div>
             <img
               src={imageUrl}
               alt="Uploaded"
-              style={{ maxWidth: '50%', maxHeight: '600px', marginBottom: '20px' }} // Limit width and height
+              style={{ maxWidth: '50%', maxHeight: '600px', marginBottom: '20px' }}
             />
             <Button icon={<CloseCircleOutlined />} onClick={handleDeleteImage} type="link" danger>
               Delete Image
@@ -167,18 +172,14 @@ const Template1: React.FC = () => {
           </div>
         )}
 
-        {/* Image URL field that gets updated after image upload */}
+        {/* Image URL Field */}
         {imageUrl && (
           <Form.Item label="Image URL">
-            <Input
-              value={imageUrl} // Bind image URL to input field
-              placeholder="Image URL will appear here"
-              disabled // Make the field read-only
-            />
+            <Input value={imageUrl} placeholder="Image URL will appear here" disabled />
           </Form.Item>
         )}
 
-        {/* Rank input */}
+        {/* Rank Input */}
         <Form.Item label="Rank" name="rank" rules={[{ required: true, message: 'Please enter rank' }]}>
           <Input
             type="number"
@@ -188,26 +189,22 @@ const Template1: React.FC = () => {
           />
         </Form.Item>
 
-        {/* Is Active toggle */}
+        {/* Is Active Toggle */}
         <Form.Item label="Is Active" name="isActive">
           <Switch checked={isActive} onChange={setIsActive} />
         </Form.Item>
 
-        {/* Link input (User-provided URL) */}
+        {/* Link Input */}
         <Form.Item label="Link" name="link" rules={[{ required: true, message: 'Please enter a link' }]}>
-          <Input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="Enter a link"
-          />
+          <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Enter a link" />
         </Form.Item>
 
-        {/* Done button */}
+        {/* Done and Cancel Buttons */}
         <Form.Item>
           <Button
             type="primary"
             onClick={handleDone}
-            disabled={!imageUrl || !rank || !link || formSubmitted} // Disable if no image or invalid data
+            disabled={!imageUrl || !rank || !link || formSubmitted}
           >
             Done
           </Button>
@@ -219,7 +216,7 @@ const Template1: React.FC = () => {
 
       {/* Success Modal */}
       <Modal
-        visible={showSuccessModal}
+        open={showSuccessModal}
         title="Success"
         onOk={() => setShowSuccessModal(false)}
         onCancel={() => setShowSuccessModal(false)}

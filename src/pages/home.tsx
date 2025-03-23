@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { UserOutlined, VideoCameraOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { UserOutlined, VideoCameraOutlined, AppstoreAddOutlined, FileTextOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
 import Users from './Users';
 import Carousel from './Carousel'; // Assume you have a Carousel component
+import Notes from './Notes';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -21,6 +22,10 @@ const Home: React.FC = () => {
     { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
     { key: 'Homepage', label: 'Homepage', icon: <VideoCameraOutlined />, children: [
       { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
+    ]},
+    { key: 'materials', label: 'Materials', icon: <AppstoreOutlined />, children: [
+      { key: 'notes', label: 'Notes', icon: <FileTextOutlined /> },
+      { key: 'quantum', label: 'Quantum', icon: <AppstoreOutlined /> },
     ]}
   ];
 
@@ -88,6 +93,8 @@ const Home: React.FC = () => {
             {activeView === 'dashboard' && <Dashboard />}
             {activeView === 'Users' && <Users />}
             {activeView === 'carousel' && <Carousel />} {/* Render Carousel by default */}
+            {activeView === 'notes' && <Notes/>}
+            {activeView === 'quantum' && <div>Quantum content here</div>}
           </div>
         </Content>
       </Layout>
