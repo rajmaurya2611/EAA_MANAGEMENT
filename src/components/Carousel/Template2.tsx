@@ -66,16 +66,6 @@ const Template2: React.FC = () => {
     setProgress(0);
   };
 
-  // (Optional) URL validation function – remove if not needed
-  const isValidUrl = (url: string) => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   // Handle Done button click
   const handleDone = async () => {
     if (!imageUrl) {
