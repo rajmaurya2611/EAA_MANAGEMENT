@@ -2,6 +2,24 @@ import React, { useState } from 'react';
 import { Button, Input, Form, message, Modal } from 'antd';
 import { db } from '../../firebaseConfig'; // Ensure your firebaseConfig exports db correctly
 import { ref as dbRef, push, set } from 'firebase/database';
+import CryptoJS from 'crypto-js';
+
+const NOTES_AES_SECRET_KEY = import.meta.env.VITE_NOTES_AES_SECRET_KEY; // Your secret key
+
+// Encryption function for PDF link
+const encryptAES = (plainText: string): string => {
+  try {
+    const key = CryptoJS.enc.Utf8.parse(NOTES_AES_SECRET_KEY);
+    const encrypted = CryptoJS.AES.encrypt(plainText, key, {
+      mode: CryptoJS.mode.ECB,
+      padding: CryptoJS.pad.Pkcs7,
+    });
+    return encrypted.toString(); // Returns the ciphertext as a string
+  } catch (error) {
+    console.error('Encryption failed', error);
+    return plainText;
+  }
+};
 
 const FirstYearNotes: React.FC = () => {
   const [form] = Form.useForm();
@@ -9,7 +27,6 @@ const FirstYearNotes: React.FC = () => {
 
   // Handle form submission (create note)
   const onFinish = async (values: any) => {
-    // Validate that a PDF link was provided
     if (!values.pdf) {
       message.error('Please provide a PDF link.');
       return;
@@ -24,6 +41,9 @@ const FirstYearNotes: React.FC = () => {
     const newNoteRef = push(notesRef);
     const noteId = newNoteRef.key; // This will be our note's id
 
+    // Encrypt the PDF link before saving
+    const encryptedPdf = encryptAES(values.pdf);
+
     // Prepare the data to be saved
     const noteData = {
       by: 'admin',
@@ -31,7 +51,7 @@ const FirstYearNotes: React.FC = () => {
       dislikes: 0,
       likes: 0,
       id: noteId,
-      pdf: values.pdf,         // PDF link provided by the user
+      pdf: encryptedPdf,         // Save the encrypted PDF link
       sub_code: values.sub_code, // Subject code input
       sub_name: values.sub_name, // Subject name input
     };
@@ -58,7 +78,6 @@ const FirstYearNotes: React.FC = () => {
     <div>
       <h2>First Year Notes</h2>
       <Form form={form} layout="vertical" onFinish={onFinish}>
-        {/* Subject Code */}
         <Form.Item
           label="Subject Code"
           name="sub_code"
@@ -66,7 +85,6 @@ const FirstYearNotes: React.FC = () => {
         >
           <Input placeholder="Enter subject code" />
         </Form.Item>
-        {/* Subject Name */}
         <Form.Item
           label="Subject Name"
           name="sub_name"
@@ -74,7 +92,6 @@ const FirstYearNotes: React.FC = () => {
         >
           <Input placeholder="Enter subject name" />
         </Form.Item>
-        {/* PDF Link Input */}
         <Form.Item
           label="PDF Link"
           name="pdf"
@@ -82,7 +99,6 @@ const FirstYearNotes: React.FC = () => {
         >
           <Input placeholder="Enter PDF link" />
         </Form.Item>
-        {/* Submit and Cancel Buttons */}
         <Form.Item>
           <Button type="primary" htmlType="submit">
             Create Note

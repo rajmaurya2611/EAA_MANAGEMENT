@@ -2,8 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Spin, Button, Modal, Form, Input, message } from 'antd';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, push, set } from 'firebase/database';
+import CryptoJS from 'crypto-js';
 
 const { Sider, Content } = Layout;
+
+// Get your secret key from environment variables
+const NOTES_AES_SECRET_KEY = import.meta.env.VITE_NOTES_AES_SECRET_KEY;
+
+// Encryption function for PDF link
+const encryptAES = (plainText: string): string => {
+  try {
+    const key = CryptoJS.enc.Utf8.parse(NOTES_AES_SECRET_KEY);
+    const encrypted = CryptoJS.AES.encrypt(plainText, key, {
+      mode: CryptoJS.mode.ECB,
+      padding: CryptoJS.pad.Pkcs7,
+    });
+    return encrypted.toString();
+  } catch (error) {
+    console.error('Encryption failed:', error);
+    return plainText;
+  }
+};
 
 interface BranchNotes {
   branch: string;
@@ -14,11 +33,16 @@ const SecondYearNotes: React.FC = () => {
   const [branches, setBranches] = useState<BranchNotes[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  // Modal state for adding a new branch/subject note (two-step modal)
   const [showAddSubjectModal, setShowAddSubjectModal] = useState<boolean>(false);
-  const [modalStep, setModalStep] = useState<number>(1); // 1: Branch name, 2: Subject details
+  const [modalStep, setModalStep] = useState<number>(1); // 1: Branch name, 2: Subject details for new branch addition
   const [newBranchName, setNewBranchName] = useState<string>('');
-  const [formStep1] = Form.useForm();
-  const [formStep2] = Form.useForm();
+  const [branchForm] = Form.useForm();
+  const [subjectModalForm] = Form.useForm();
+  // Subject note form in content area (always visible)
+  const [subjectForm] = Form.useForm();
+  // Success modal for subject note addition from content area
+  const [showSubjectSuccessModal, setShowSubjectSuccessModal] = useState<boolean>(false);
 
   // Listen for branches at the specified path
   useEffect(() => {
@@ -46,7 +70,8 @@ const SecondYearNotes: React.FC = () => {
     setSelectedBranch(key);
   };
 
-  // Modal Step 1: Enter Branch Name
+  // --- Two-Step Modal for Adding a New Branch & Subject Note ---
+  // Step 1: Enter Branch Name
   const onFinishStep1 = (values: any) => {
     const branchName = values.branchName.trim();
     if (!branchName) {
@@ -58,18 +83,18 @@ const SecondYearNotes: React.FC = () => {
     setModalStep(2);
   };
 
-  // Modal Step 2: Enter Subject Details
+  // Step 2: Enter Subject Details for the new branch
   const onFinishStep2 = async (values: any) => {
     const { pdf, sub_code, sub_name } = values;
     if (!pdf || !sub_code || !sub_name) {
       message.error('Please fill all the required fields.');
       return;
     }
-    // Capture current date
     const current = new Date();
     const dateStr = current.toLocaleDateString();
-    // The path for the new subject will be:
-    // version12/Materials/Notes/Second_Year/<newBranchName>
+    // Encrypt the PDF link before saving
+    const encryptedPdf = encryptAES(pdf);
+    // The path for the new subject will be: version12/Materials/Notes/Second_Year/<newBranchName>
     const branchPath = `version12/Materials/Notes/Second_Year/${newBranchName}`;
     const newSubjectRef = push(dbRef(db, branchPath));
     const newSubjectId = newSubjectRef.key;
@@ -79,19 +104,20 @@ const SecondYearNotes: React.FC = () => {
       dislikes: 0,
       likes: 0,
       id: newSubjectId,
-      pdf,
+      pdf: encryptedPdf,
       sub_code,
       sub_name,
     };
 
     try {
       await set(newSubjectRef, subjectData);
-      message.success('Subject added successfully!');
-      setShowAddSubjectModal(true);
-      // Reset modal after submission
+      message.success('Subject added successfully under new branch!');
+      // Optionally, set the newly created branch as selected:
+      setSelectedBranch(newBranchName);
+      // Reset the modal
       setTimeout(() => {
-        formStep1.resetFields();
-        formStep2.resetFields();
+        branchForm.resetFields();
+        subjectModalForm.resetFields();
         setModalStep(1);
         setShowAddSubjectModal(false);
       }, 1000);
@@ -100,12 +126,57 @@ const SecondYearNotes: React.FC = () => {
     }
   };
 
-  // Modal cancel resets both steps
   const handleModalCancel = () => {
     setShowAddSubjectModal(false);
     setModalStep(1);
-    formStep1.resetFields();
-    formStep2.resetFields();
+    branchForm.resetFields();
+    subjectModalForm.resetFields();
+  };
+
+  // --- Subject Note Form in Content Area (Always Visible) ---
+  const onFinishSubject = async (values: any) => {
+    if (!selectedBranch) {
+      message.error('No branch selected.');
+      return;
+    }
+    const { pdf, sub_code, sub_name } = values;
+    if (!pdf || !sub_code || !sub_name) {
+      message.error('Please fill in all fields.');
+      return;
+    }
+    const current = new Date();
+    const dateStr = current.toLocaleDateString();
+    // Encrypt the PDF link before saving
+    const encryptedPdf = encryptAES(pdf);
+    const branchPath = `version12/Materials/Notes/Second_Year/${selectedBranch}`;
+    const newNoteRef = push(dbRef(db, branchPath));
+    const newNoteId = newNoteRef.key;
+    const noteData = {
+      by: 'admin',
+      date: dateStr,
+      dislikes: 0,
+      likes: 0,
+      id: newNoteId,
+      pdf: encryptedPdf,
+      sub_code,
+      sub_name,
+    };
+
+    try {
+      await set(newNoteRef, noteData);
+      message.success('Subject note added successfully!');
+      setShowSubjectSuccessModal(true);
+      setTimeout(() => {
+        subjectForm.resetFields();
+        setShowSubjectSuccessModal(false);
+      }, 1000);
+    } catch (error) {
+      message.error('Failed to add subject note.');
+    }
+  };
+
+  const onSubjectCancel = () => {
+    subjectForm.resetFields();
   };
 
   return (
@@ -128,7 +199,10 @@ const SecondYearNotes: React.FC = () => {
             <Button
               type="dashed"
               style={{ width: '90%', margin: '10px' }}
-              onClick={() => setShowAddSubjectModal(true)}
+              onClick={() => {
+                setShowAddSubjectModal(true);
+                setModalStep(1);
+              }}
             >
               Add Subject
             </Button>
@@ -137,11 +211,42 @@ const SecondYearNotes: React.FC = () => {
       </Sider>
       <Layout style={{ padding: '24px' }}>
         <Content style={{ background: '#fff', padding: 24, minHeight: 280 }}>
-          {/* Content area intentionally left empty */}
+          <h2>Add Subject Note to {selectedBranch}</h2>
+          <Form form={subjectForm} layout="vertical" onFinish={onFinishSubject}>
+            <Form.Item
+              label="PDF Link"
+              name="pdf"
+              rules={[{ required: true, message: 'Please enter the PDF link' }]}
+            >
+              <Input placeholder="Enter PDF link" />
+            </Form.Item>
+            <Form.Item
+              label="Subject Code"
+              name="sub_code"
+              rules={[{ required: true, message: 'Please enter the subject code' }]}
+            >
+              <Input placeholder="Enter subject code" />
+            </Form.Item>
+            <Form.Item
+              label="Subject Name"
+              name="sub_name"
+              rules={[{ required: true, message: 'Please enter the subject name' }]}
+            >
+              <Input placeholder="Enter subject name" />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                Add Subject Note
+              </Button>
+              <Button onClick={onSubjectCancel} style={{ marginLeft: '10px' }}>
+                Cancel
+              </Button>
+            </Form.Item>
+          </Form>
         </Content>
       </Layout>
 
-      {/* Modal for adding a new subject */}
+      {/* Two-Step Modal for adding a new branch & subject details */}
       <Modal
         open={showAddSubjectModal}
         title="Add New Subject"
@@ -149,7 +254,7 @@ const SecondYearNotes: React.FC = () => {
         footer={null}
       >
         {modalStep === 1 && (
-          <Form form={formStep1} layout="vertical" onFinish={onFinishStep1}>
+          <Form form={branchForm} layout="vertical" onFinish={onFinishStep1}>
             <Form.Item
               label="Branch Name"
               name="branchName"
@@ -165,7 +270,7 @@ const SecondYearNotes: React.FC = () => {
           </Form>
         )}
         {modalStep === 2 && (
-          <Form form={formStep2} layout="vertical" onFinish={onFinishStep2}>
+          <Form form={subjectModalForm} layout="vertical" onFinish={onFinishStep2}>
             <Form.Item
               label="PDF Link"
               name="pdf"
@@ -194,6 +299,21 @@ const SecondYearNotes: React.FC = () => {
             </Form.Item>
           </Form>
         )}
+      </Modal>
+
+      {/* Success Modal for Subject Note Addition */}
+      <Modal
+        open={showSubjectSuccessModal}
+        title="Success"
+        onOk={() => setShowSubjectSuccessModal(false)}
+        onCancel={() => setShowSubjectSuccessModal(false)}
+        footer={[
+          <Button key="ok" type="primary" onClick={() => setShowSubjectSuccessModal(false)}>
+            OK
+          </Button>,
+        ]}
+      >
+        <p>Your subject note has been added successfully!</p>
       </Modal>
     </Layout>
   );
