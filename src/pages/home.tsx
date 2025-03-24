@@ -12,11 +12,17 @@ import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
 import Users from './Users';
 import Carousel from './Carousel'; // Assume you have a Carousel component
-import Notes from './Notes'; // Assume you have a Notes component (could be a parent for notesNew/manage)
 import NewNotes from '../components/Notes/NewNotes';
-  
+
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
+
+interface NavItem {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  children?: NavItem[];
+}
 
 const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -26,8 +32,7 @@ const Home: React.FC = () => {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  // Updated navItems with nested submenus under Materials
-  const navItems = [
+  const navItems: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: <UserOutlined /> },
     { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
     {
@@ -66,7 +71,6 @@ const Home: React.FC = () => {
   ];
 
   const handleMenuClick = (key: string) => {
-    // For simplicity, directly set active view to the key of the clicked item.
     setActiveView(key);
   };
 
@@ -92,7 +96,7 @@ const Home: React.FC = () => {
                 {item.children.map((subItem) =>
                   subItem.children ? (
                     <SubMenu key={subItem.key} icon={subItem.icon} title={subItem.label}>
-                      {subItem.children.map((child) => (
+                      {(subItem.children as NavItem[]).map((child: NavItem) => (
                         <Menu.Item key={child.key} icon={child.icon}>
                           {child.label}
                         </Menu.Item>
@@ -136,7 +140,7 @@ const Home: React.FC = () => {
             {activeView === 'dashboard' && <Dashboard />}
             {activeView === 'Users' && <Users />}
             {activeView === 'carousel' && <Carousel />}
-            {activeView === 'notesNew' && <NewNotes/>}
+            {activeView === 'notesNew' && <NewNotes />}
             {activeView === 'notesManage' && <div>Manage Notes content here</div>}
             {activeView === 'quantumNew' && <div>New Quantum content here</div>}
             {activeView === 'quantumManage' && <div>Manage Quantum content here</div>}
