@@ -1,11 +1,20 @@
-import { useState } from 'react';
-import { UserOutlined, VideoCameraOutlined, AppstoreAddOutlined, FileTextOutlined, AppstoreOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import {
+  UserOutlined,
+  VideoCameraOutlined,
+  AppstoreAddOutlined,
+  FileTextOutlined,
+  AppstoreOutlined,
+  PlusOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
 import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
 import Users from './Users';
 import Carousel from './Carousel'; // Assume you have a Carousel component
-import Notes from './Notes';
-
+import Notes from './Notes'; // Assume you have a Notes component (could be a parent for notesNew/manage)
+import NewNotes from '../components/Notes/NewNotes';
+  
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
 
@@ -17,34 +26,58 @@ const Home: React.FC = () => {
     token: { colorBgContainer },
   } = theme.useToken();
 
+  // Updated navItems with nested submenus under Materials
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: <UserOutlined /> },
     { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
-    { key: 'Homepage', label: 'Homepage', icon: <VideoCameraOutlined />, children: [
-      { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
-    ]},
-    { key: 'materials', label: 'Materials', icon: <AppstoreOutlined />, children: [
-      { key: 'notes', label: 'Notes', icon: <FileTextOutlined /> },
-      { key: 'quantum', label: 'Quantum', icon: <AppstoreOutlined /> },
-    ]}
+    {
+      key: 'Homepage',
+      label: 'Homepage',
+      icon: <VideoCameraOutlined />,
+      children: [
+        { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
+      ],
+    },
+    {
+      key: 'materials',
+      label: 'Materials',
+      icon: <AppstoreOutlined />,
+      children: [
+        {
+          key: 'notes',
+          label: 'Notes',
+          icon: <FileTextOutlined />,
+          children: [
+            { key: 'notesNew', label: 'New', icon: <PlusOutlined /> },
+            { key: 'notesManage', label: 'Manage', icon: <EditOutlined /> },
+          ],
+        },
+        {
+          key: 'quantum',
+          label: 'Quantum',
+          icon: <AppstoreOutlined />,
+          children: [
+            { key: 'quantumNew', label: 'New', icon: <PlusOutlined /> },
+            { key: 'quantumManage', label: 'Manage', icon: <EditOutlined /> },
+          ],
+        },
+      ],
+    },
   ];
 
   const handleMenuClick = (key: string) => {
-    if (key === 'Homepage') {
-      setActiveView('carousel'); // Default to 'carousel' view when "Homepage" is clicked
-    } else {
-      setActiveView(key); // Otherwise, set the active view to the clicked menu item
-    }
+    // For simplicity, directly set active view to the key of the clicked item.
+    setActiveView(key);
   };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* Sidebar with scroll */}
+      {/* Sidebar */}
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        style={{ overflowY: 'auto' }} // Make sidebar scrollable
+        style={{ overflowY: 'auto' }}
       >
         <div className="demo-logo-vertical" />
         <Menu
@@ -53,32 +86,42 @@ const Home: React.FC = () => {
           mode="inline"
           onClick={({ key }) => handleMenuClick(key)}
         >
-          {navItems.map((item) => (
+          {navItems.map((item) =>
             item.children ? (
               <SubMenu key={item.key} icon={item.icon} title={item.label}>
-                {item.children.map((subItem) => (
-                  <Menu.Item key={subItem.key} icon={subItem.icon}>
-                    {subItem.label}
-                  </Menu.Item>
-                ))}
+                {item.children.map((subItem) =>
+                  subItem.children ? (
+                    <SubMenu key={subItem.key} icon={subItem.icon} title={subItem.label}>
+                      {subItem.children.map((child) => (
+                        <Menu.Item key={child.key} icon={child.icon}>
+                          {child.label}
+                        </Menu.Item>
+                      ))}
+                    </SubMenu>
+                  ) : (
+                    <Menu.Item key={subItem.key} icon={subItem.icon}>
+                      {subItem.label}
+                    </Menu.Item>
+                  )
+                )}
               </SubMenu>
             ) : (
               <Menu.Item key={item.key} icon={item.icon}>
                 {item.label}
               </Menu.Item>
             )
-          ))}
+          )}
         </Menu>
       </Sider>
 
+      {/* Main Layout Content */}
       <Layout>
-        {/* Content */}
         <Content
           style={{
             margin: '0',
-            paddingTop: 0, // Add some padding at the top if needed
-            overflowY: 'auto', // Allow scrolling
-            height: '100vh', // Subtract height of the Header
+            paddingTop: 0,
+            overflowY: 'auto',
+            height: '100vh',
           }}
         >
           <div
@@ -86,15 +129,17 @@ const Home: React.FC = () => {
               padding: 0,
               minHeight: 360,
               background: colorBgContainer,
-              overflowY: 'auto', // Enable scrolling within content if necessary
-              maxHeight: '100vh', // Ensure content doesn't overflow past the page
+              overflowY: 'auto',
+              maxHeight: '100vh',
             }}
           >
             {activeView === 'dashboard' && <Dashboard />}
             {activeView === 'Users' && <Users />}
-            {activeView === 'carousel' && <Carousel />} {/* Render Carousel by default */}
-            {activeView === 'notes' && <Notes/>}
-            {activeView === 'quantum' && <div>Quantum content here</div>}
+            {activeView === 'carousel' && <Carousel />}
+            {activeView === 'notesNew' && <NewNotes/>}
+            {activeView === 'notesManage' && <div>Manage Notes content here</div>}
+            {activeView === 'quantumNew' && <div>New Quantum content here</div>}
+            {activeView === 'quantumManage' && <div>Manage Quantum content here</div>}
           </div>
         </Content>
       </Layout>
