@@ -204,14 +204,19 @@ const ThirdYearNotes: React.FC = () => {
                 setModalStep(1);
               }}
             >
-              Add Subject
+              Add Branch
             </Button>
           </>
         )}
       </Sider>
       <Layout style={{ padding: '24px' }}>
         <Content style={{ background: '#fff', padding: 24, minHeight: 280 }}>
-          <h2>Add Subject Note to {selectedBranch}</h2>
+        <div className="text-left mb-7">
+              <h2 className="text-2xl font-semibold">Data Entry</h2>
+              <p className="text-sm text-gray-500">
+                  Note: The Content will be added in 3rd Year (<span className="font-medium text-gray-500">{selectedBranch}</span>)
+              </p>
+        </div>
           <Form form={subjectForm} layout="vertical" onFinish={onFinishSubject}>
             <Form.Item
               label="PDF Link"
@@ -227,7 +232,7 @@ const ThirdYearNotes: React.FC = () => {
             >
               <Input placeholder="Enter subject code" />
             </Form.Item>
-            <Form.Item
+            <Form.Item className='mb-10'
               label="Subject Name"
               name="sub_name"
               rules={[{ required: true, message: 'Please enter the subject name' }]}

@@ -17,7 +17,12 @@ const NewNotes: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Content style={{ margin: '16px', padding: '20px', background: '#fff', borderRadius: '8px' }}>
-        <h1>Notes</h1>
+      <div className="text-left">
+  <h1 className="text-4xl font-bold mb-0" style={{ color: "#5A72E9" }}>Add Notes</h1>
+  <p className="text-sm text-gray-500 mb-3">Select year & branch to upload notes</p>
+</div>
+
+
         {/* Horizontal Navbar for 1st, 2nd, 3rd, and 4th Year */}
         <Menu
           mode="horizontal"
