@@ -13,6 +13,7 @@ import Dashboard from '../components/dashboard';
 import Users from './Users';
 import Carousel from './Carousel'; // Assume you have a Carousel component
 import NewNotes from '../components/Notes/NewNotes';
+import NewQuantums from '../components/Quantums/NewQuantums';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -142,7 +143,7 @@ const Home: React.FC = () => {
             {activeView === 'carousel' && <Carousel />}
             {activeView === 'notesNew' && <NewNotes />}
             {activeView === 'notesManage' && <div>Manage Notes content here</div>}
-            {activeView === 'quantumNew' && <div>New Quantum content here</div>}
+            {activeView === 'quantumNew' && <NewQuantums/>}
             {activeView === 'quantumManage' && <div>Manage Quantum content here</div>}
           </div>
         </Content>

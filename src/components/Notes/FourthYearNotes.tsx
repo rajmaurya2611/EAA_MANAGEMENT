@@ -7,7 +7,7 @@ import CryptoJS from 'crypto-js';
 const { Sider, Content } = Layout;
 
 // Get your secret key from environment variables
-const NOTES_AES_SECRET_KEY = import.meta.env.VITE_NOTES_AES_SECRET_KEY;
+const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY;
 
 // Encryption function for text fields
 const encryptAES = (plainText: string): string => {
