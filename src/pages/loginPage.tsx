@@ -27,7 +27,11 @@ function Login() {
         onSubmit={handleLogin} 
         className="bg-white p-8 rounded shadow-md w-full max-w-md"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        <div className="flex flex-col items-center">
+  <img src="/app_logo.png" alt="App Logo" className="w-20 h-20 mb-4" />
+  <h1 className="text-4xl font-bold">Engineers At AKTU</h1>
+  <h2 className="text-lg text-gray-600 mt-2">Login</h2>
+</div>
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <div className="mb-4">
           <label className="block mb-1">Email</label>
