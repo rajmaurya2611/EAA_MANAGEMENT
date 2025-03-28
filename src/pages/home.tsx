@@ -14,6 +14,8 @@ import Users from './Users';
 import Carousel from './Carousel'; // Assume you have a Carousel component
 import NewNotes from '../components/Notes/NewNotes';
 import NewQuantums from '../components/Quantums/NewQuantums';
+import NewPYQ from '../components/PYQs/NewPYQ';
+import NewSyllabus from "../components/Syllabus/NewSyllabus"
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -65,6 +67,24 @@ const Home: React.FC = () => {
           children: [
             { key: 'quantumNew', label: 'New', icon: <PlusOutlined /> },
             { key: 'quantumManage', label: 'Manage', icon: <EditOutlined /> },
+          ],
+        },
+        {
+          key: 'pyqs',
+          label: 'PYQs',
+          icon: <AppstoreOutlined />,
+          children: [
+            { key: 'pyqNew', label: 'New', icon: <PlusOutlined /> },
+            { key: 'pyqManage', label: 'Manage', icon: <EditOutlined /> },
+          ],
+        },
+        {
+          key: 'syllabus',
+          label: 'Syllabus',
+          icon: <AppstoreOutlined />,
+          children: [
+            { key: 'syllabusNew', label: 'New', icon: <PlusOutlined /> },
+            { key: 'syllabusManage', label: 'Manage', icon: <EditOutlined /> },
           ],
         },
       ],
@@ -145,6 +165,10 @@ const Home: React.FC = () => {
             {activeView === 'notesManage' && <div>Manage Notes content here</div>}
             {activeView === 'quantumNew' && <NewQuantums/>}
             {activeView === 'quantumManage' && <div>Manage Quantum content here</div>}
+            {activeView === 'pyqNew' && <NewPYQ/>}
+            {activeView === 'pyqManage' && <div>Manage Quantum content here</div>}
+            {activeView === 'syllabusNew' && <NewSyllabus />}
+            {activeView === 'syllabusManage' && <div>Manage Quantum content here</div>}
           </div>
         </Content>
       </Layout>
