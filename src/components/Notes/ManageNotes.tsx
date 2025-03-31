@@ -15,7 +15,6 @@ import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update, remove } from 'firebase/database';
 import CryptoJS from 'crypto-js';
 
-const { Content } = Layout;
 const { Option } = Select;
 
 const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY;
