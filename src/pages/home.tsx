@@ -11,11 +11,11 @@ import {
 import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
 import Users from './Users';
-import Carousel from './Carousel'; // Assume you have a Carousel component
+import Carousel from './Carousel';
 import NewNotes from '../components/Notes/NewNotes';
 import NewQuantums from '../components/Quantums/NewQuantums';
 import NewPYQ from '../components/PYQs/NewPYQ';
-import NewSyllabus from "../components/Syllabus/NewSyllabus"
+import NewSyllabus from "../components/Syllabus/NewSyllabus";
 import ManageNotes from '../components/Notes/ManageNotes';
 import ManageQuantum from '../components/Quantums/ManageQuantums';
 import ManageSyllabus from '../components/Syllabus/ManageSyllabus';
@@ -33,7 +33,7 @@ interface NavItem {
 
 const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeView, setActiveView] = useState('dashboard'); // Default view
+  const [activeView, setActiveView] = useState('dashboard');
 
   const {
     token: { colorBgContainer },
@@ -93,6 +93,18 @@ const Home: React.FC = () => {
         },
       ],
     },
+    {
+      key: 'userRequests',
+      label: 'User Requests',
+      icon: <UserOutlined />,
+      children: [
+        { key: 'userReqNotes', label: 'Notes', icon: <FileTextOutlined /> },
+        { key: 'userReqPYQs', label: 'PYQs', icon: <AppstoreOutlined /> },
+        { key: 'userReqQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
+        { key: 'userReqRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
+        { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
+      ],
+    },
   ];
 
   const handleMenuClick = (key: string) => {
@@ -101,7 +113,6 @@ const Home: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* Sidebar */}
       <Sider
         collapsible
         collapsed={collapsed}
@@ -143,7 +154,6 @@ const Home: React.FC = () => {
         </Menu>
       </Sider>
 
-      {/* Main Layout Content */}
       <Layout>
         <Content
           style={{
@@ -162,17 +172,25 @@ const Home: React.FC = () => {
               maxHeight: '100vh',
             }}
           >
+            {/* Existing Views */}
             {activeView === 'dashboard' && <Dashboard />}
             {activeView === 'Users' && <Users />}
             {activeView === 'carousel' && <Carousel />}
             {activeView === 'notesNew' && <NewNotes />}
-            {activeView === 'notesManage' && <ManageNotes/>}
-            {activeView === 'quantumNew' && <NewQuantums/>}
-            {activeView === 'quantumManage' && <ManageQuantum/>}
-            {activeView === 'pyqNew' && <NewPYQ/>}
-            {activeView === 'pyqManage' && <ManagePYQs/>}
+            {activeView === 'notesManage' && <ManageNotes />}
+            {activeView === 'quantumNew' && <NewQuantums />}
+            {activeView === 'quantumManage' && <ManageQuantum />}
+            {activeView === 'pyqNew' && <NewPYQ />}
+            {activeView === 'pyqManage' && <ManagePYQs />}
             {activeView === 'syllabusNew' && <NewSyllabus />}
-            {activeView === 'syllabusManage' && <ManageSyllabus/>}
+            {activeView === 'syllabusManage' && <ManageSyllabus />}
+
+            {/* New User Request Views (Placeholders for now) */}
+            {activeView === 'userReqNotes' && <div>User Requested Notes View</div>}
+            {activeView === 'userReqPYQs' && <div>User Requested PYQs View</div>}
+            {activeView === 'userReqQuantum' && <div>User Requested Quantum View</div>}
+            {activeView === 'userReqRoadmaps' && <div>User Requested Roadmaps View</div>}
+            {activeView === 'userReqSyllabus' && <div>User Requested Syllabus View</div>}
           </div>
         </Content>
       </Layout>
@@ -181,3 +199,188 @@ const Home: React.FC = () => {
 };
 
 export default Home;
+
+
+// import React, { useState } from 'react';
+// import {
+//   UserOutlined,
+//   VideoCameraOutlined,
+//   AppstoreAddOutlined,
+//   FileTextOutlined,
+//   AppstoreOutlined,
+//   PlusOutlined,
+//   EditOutlined,
+// } from '@ant-design/icons';
+// import { Layout, Menu, theme } from 'antd';
+// import Dashboard from '../components/dashboard';
+// import Users from './Users';
+// import Carousel from './Carousel'; // Assume you have a Carousel component
+// import NewNotes from '../components/Notes/NewNotes';
+// import NewQuantums from '../components/Quantums/NewQuantums';
+// import NewPYQ from '../components/PYQs/NewPYQ';
+// import NewSyllabus from "../components/Syllabus/NewSyllabus"
+// import ManageNotes from '../components/Notes/ManageNotes';
+// import ManageQuantum from '../components/Quantums/ManageQuantums';
+// import ManageSyllabus from '../components/Syllabus/ManageSyllabus';
+// import ManagePYQs from '../components/PYQs/ManagePYQ';
+
+// const { Content, Sider } = Layout;
+// const { SubMenu } = Menu;
+
+// interface NavItem {
+//   key: string;
+//   label: string;
+//   icon: React.ReactNode;
+//   children?: NavItem[];
+// }
+
+// const Home: React.FC = () => {
+//   const [collapsed, setCollapsed] = useState(false);
+//   const [activeView, setActiveView] = useState('dashboard'); // Default view
+
+//   const {
+//     token: { colorBgContainer },
+//   } = theme.useToken();
+
+//   const navItems: NavItem[] = [
+//     { key: 'dashboard', label: 'Dashboard', icon: <UserOutlined /> },
+//     { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
+//     {
+//       key: 'Homepage',
+//       label: 'Homepage',
+//       icon: <VideoCameraOutlined />,
+//       children: [
+//         { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
+//       ],
+//     },
+//     {
+//       key: 'materials',
+//       label: 'Materials',
+//       icon: <AppstoreOutlined />,
+//       children: [
+//         {
+//           key: 'notes',
+//           label: 'Notes',
+//           icon: <FileTextOutlined />,
+//           children: [
+//             { key: 'notesNew', label: 'New', icon: <PlusOutlined /> },
+//             { key: 'notesManage', label: 'Manage', icon: <EditOutlined /> },
+//           ],
+//         },
+//         {
+//           key: 'quantum',
+//           label: 'Quantum',
+//           icon: <AppstoreOutlined />,
+//           children: [
+//             { key: 'quantumNew', label: 'New', icon: <PlusOutlined /> },
+//             { key: 'quantumManage', label: 'Manage', icon: <EditOutlined /> },
+//           ],
+//         },
+//         {
+//           key: 'pyqs',
+//           label: 'PYQs',
+//           icon: <AppstoreOutlined />,
+//           children: [
+//             { key: 'pyqNew', label: 'New', icon: <PlusOutlined /> },
+//             { key: 'pyqManage', label: 'Manage', icon: <EditOutlined /> },
+//           ],
+//         },
+//         {
+//           key: 'syllabus',
+//           label: 'Syllabus',
+//           icon: <AppstoreOutlined />,
+//           children: [
+//             { key: 'syllabusNew', label: 'New', icon: <PlusOutlined /> },
+//             { key: 'syllabusManage', label: 'Manage', icon: <EditOutlined /> },
+//           ],
+//         },
+//       ],
+//     },
+//   ];
+
+//   const handleMenuClick = (key: string) => {
+//     setActiveView(key);
+//   };
+
+//   return (
+//     <Layout style={{ minHeight: '100vh' }}>
+//       {/* Sidebar */}
+//       <Sider
+//         collapsible
+//         collapsed={collapsed}
+//         onCollapse={setCollapsed}
+//         style={{ overflowY: 'auto' }}
+//       >
+//         <div className="demo-logo-vertical" />
+//         <Menu
+//           theme="dark"
+//           defaultSelectedKeys={['dashboard']}
+//           mode="inline"
+//           onClick={({ key }) => handleMenuClick(key)}
+//         >
+//           {navItems.map((item) =>
+//             item.children ? (
+//               <SubMenu key={item.key} icon={item.icon} title={item.label}>
+//                 {item.children.map((subItem) =>
+//                   subItem.children ? (
+//                     <SubMenu key={subItem.key} icon={subItem.icon} title={subItem.label}>
+//                       {(subItem.children as NavItem[]).map((child: NavItem) => (
+//                         <Menu.Item key={child.key} icon={child.icon}>
+//                           {child.label}
+//                         </Menu.Item>
+//                       ))}
+//                     </SubMenu>
+//                   ) : (
+//                     <Menu.Item key={subItem.key} icon={subItem.icon}>
+//                       {subItem.label}
+//                     </Menu.Item>
+//                   )
+//                 )}
+//               </SubMenu>
+//             ) : (
+//               <Menu.Item key={item.key} icon={item.icon}>
+//                 {item.label}
+//               </Menu.Item>
+//             )
+//           )}
+//         </Menu>
+//       </Sider>
+
+//       {/* Main Layout Content */}
+//       <Layout>
+//         <Content
+//           style={{
+//             margin: '0',
+//             paddingTop: 0,
+//             overflowY: 'auto',
+//             height: '100vh',
+//           }}
+//         >
+//           <div
+//             style={{
+//               padding: 0,
+//               minHeight: 360,
+//               background: colorBgContainer,
+//               overflowY: 'auto',
+//               maxHeight: '100vh',
+//             }}
+//           >
+//             {activeView === 'dashboard' && <Dashboard />}
+//             {activeView === 'Users' && <Users />}
+//             {activeView === 'carousel' && <Carousel />}
+//             {activeView === 'notesNew' && <NewNotes />}
+//             {activeView === 'notesManage' && <ManageNotes/>}
+//             {activeView === 'quantumNew' && <NewQuantums/>}
+//             {activeView === 'quantumManage' && <ManageQuantum/>}
+//             {activeView === 'pyqNew' && <NewPYQ/>}
+//             {activeView === 'pyqManage' && <ManagePYQs/>}
+//             {activeView === 'syllabusNew' && <NewSyllabus />}
+//             {activeView === 'syllabusManage' && <ManageSyllabus/>}
+//           </div>
+//         </Content>
+//       </Layout>
+//     </Layout>
+//   );
+// };
+
+// export default Home;
