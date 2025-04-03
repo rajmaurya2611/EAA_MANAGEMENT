@@ -17,6 +17,8 @@ import NewQuantums from '../components/Quantums/NewQuantums';
 import NewPYQ from '../components/PYQs/NewPYQ';
 import NewSyllabus from "../components/Syllabus/NewSyllabus"
 import ManageNotes from '../components/Notes/ManageNotes';
+import ManageQuantum from '../components/Quantums/ManageQuantums';
+import ManageSyllabus from '../components/Syllabus/ManageSyllabus';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -165,11 +167,11 @@ const Home: React.FC = () => {
             {activeView === 'notesNew' && <NewNotes />}
             {activeView === 'notesManage' && <ManageNotes/>}
             {activeView === 'quantumNew' && <NewQuantums/>}
-            {activeView === 'quantumManage' && <div>Manage Quantum content here</div>}
+            {activeView === 'quantumManage' && <ManageQuantum/>}
             {activeView === 'pyqNew' && <NewPYQ/>}
             {activeView === 'pyqManage' && <div>Manage Quantum content here</div>}
             {activeView === 'syllabusNew' && <NewSyllabus />}
-            {activeView === 'syllabusManage' && <div>Manage Quantum content here</div>}
+            {activeView === 'syllabusManage' && <ManageSyllabus/>}
           </div>
         </Content>
       </Layout>
