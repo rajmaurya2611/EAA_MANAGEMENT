@@ -10,7 +10,6 @@ import {
 } from '@ant-design/icons';
 import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
-import Users from './Users';
 import Carousel from './Carousel';
 import NewNotes from '../components/Notes/NewNotes';
 import NewQuantums from '../components/Quantums/NewQuantums';
@@ -25,7 +24,6 @@ import UserRequestedQuantums from '../components/UserRequests/UserRequestedQuant
 import UserRequestedPYQs from '../components/UserRequests/UserRequestedPyqs';
 import UserRequestedRoadmaps from '../components/UserRequests/UserRequestedRoadmaps';
 import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSyllabus';
-import UserDashboard from '../components/Users/UsersVersion12';
 import UsersVersion12 from '../components/Users/UsersVersion12';
 import UsersOld from '../components/Users/UsersOld';
 
