@@ -4,8 +4,7 @@ import type { TableColumnsType } from "antd";
 import { getDatabase, ref, onValue, off, DataSnapshot } from "firebase/database";
 import CryptoJS from "crypto-js";
 
-const AES_SECRET_KEY = import.meta.env.VITE_AES_SECRET_KEY
- // Must match Android encryption key
+const AES_SECRET_KEY = import.meta.env.VITE_AES_SECRET_KEY; // Must match Android encryption key
 
 const decryptAES = (encryptedText: string) => {
   try {
@@ -35,7 +34,7 @@ interface UserData {
   registrationDate: string;
 }
 
-const UserDashboard: React.FC = () => {
+const UsersVersion12: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
 
   useEffect(() => {
@@ -50,7 +49,7 @@ const UserDashboard: React.FC = () => {
       }
 
       const decryptedUsers: UserData[] = Object.entries(val).map(([userId, userData]) => {
-        const user = userData as Record<string, string>; // 👈 This tells TypeScript that userData is an object with string values
+        const user = userData as Record<string, string>;
       
         return {
           key: userId,
@@ -63,7 +62,6 @@ const UserDashboard: React.FC = () => {
           registrationDate: user.RegistrationDate || "N/A",
         };
       });
-      
 
       setUsers(decryptedUsers);
     };
@@ -101,20 +99,22 @@ const UserDashboard: React.FC = () => {
     },
     {
       title: "Registration Type",
-      dataIndex: "registrationType", // Corrected
+      dataIndex: "registrationType",
       key: "registrationType",
     },
     {
       title: "Registration Date",
-      dataIndex: "registrationDate", // Corrected
+      dataIndex: "registrationDate",
       key: "registrationDate",
     },
   ];
-  
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Users Dashboard</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Users Version 12</h1>
+        <span className="text-lg text-black">Total Users: {users.length}</span>
+      </div>
       <Table<UserData>
         columns={columns}
         dataSource={users}
@@ -124,4 +124,4 @@ const UserDashboard: React.FC = () => {
   );
 };
 
-export default UserDashboard;
+export default UsersVersion12;

@@ -25,6 +25,9 @@ import UserRequestedQuantums from '../components/UserRequests/UserRequestedQuant
 import UserRequestedPYQs from '../components/UserRequests/UserRequestedPyqs';
 import UserRequestedRoadmaps from '../components/UserRequests/UserRequestedRoadmaps';
 import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSyllabus';
+import UserDashboard from '../components/Users/UsersVersion12';
+import UsersVersion12 from '../components/Users/UsersVersion12';
+import UsersOld from '../components/Users/UsersOld';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -46,7 +49,15 @@ const Home: React.FC = () => {
 
   const navItems: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: <UserOutlined /> },
-    { key: 'Users', label: 'Users', icon: <VideoCameraOutlined /> },
+    {
+      key: 'Users',
+      label: 'Users',
+      icon: <VideoCameraOutlined />,
+      children: [
+        { key: 'usersV12', label: 'Version 12', icon: <UserOutlined /> },
+        { key: 'usersOld', label: 'Old Version', icon: <UserOutlined /> },
+      ],
+    },
     {
       key: 'Homepage',
       label: 'Homepage',
@@ -177,9 +188,9 @@ const Home: React.FC = () => {
               maxHeight: '100vh',
             }}
           >
-            {/* Existing Views */}
             {activeView === 'dashboard' && <Dashboard />}
-            {activeView === 'Users' && <Users />}
+            {activeView === 'usersV12' && <UsersVersion12/>}
+            {activeView === 'usersOld' && <UsersOld/>}
             {activeView === 'carousel' && <Carousel />}
             {activeView === 'notesNew' && <NewNotes />}
             {activeView === 'notesManage' && <ManageNotes />}
@@ -189,13 +200,11 @@ const Home: React.FC = () => {
             {activeView === 'pyqManage' && <ManagePYQs />}
             {activeView === 'syllabusNew' && <NewSyllabus />}
             {activeView === 'syllabusManage' && <ManageSyllabus />}
-
-            {/* New User Request Views (Placeholders for now) */}
-            {activeView === 'userReqNotes' && <UserRequestedNotes/>}
-            {activeView === 'userReqPYQs' && <UserRequestedPYQs/>}
-            {activeView === 'userReqQuantum' && <UserRequestedQuantums/>}
-            {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps/>}
-            {activeView === 'userReqSyllabus' && <UserRequestedSyllabus/>}
+            {activeView === 'userReqNotes' && <UserRequestedNotes />}
+            {activeView === 'userReqPYQs' && <UserRequestedPYQs />}
+            {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
+            {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps />}
+            {activeView === 'userReqSyllabus' && <UserRequestedSyllabus />}
           </div>
         </Content>
       </Layout>
@@ -219,15 +228,20 @@ export default Home;
 // import { Layout, Menu, theme } from 'antd';
 // import Dashboard from '../components/dashboard';
 // import Users from './Users';
-// import Carousel from './Carousel'; // Assume you have a Carousel component
+// import Carousel from './Carousel';
 // import NewNotes from '../components/Notes/NewNotes';
 // import NewQuantums from '../components/Quantums/NewQuantums';
 // import NewPYQ from '../components/PYQs/NewPYQ';
-// import NewSyllabus from "../components/Syllabus/NewSyllabus"
+// import NewSyllabus from "../components/Syllabus/NewSyllabus";
 // import ManageNotes from '../components/Notes/ManageNotes';
 // import ManageQuantum from '../components/Quantums/ManageQuantums';
 // import ManageSyllabus from '../components/Syllabus/ManageSyllabus';
 // import ManagePYQs from '../components/PYQs/ManagePYQ';
+// import UserRequestedNotes from '../components/UserRequests/UserRequestedNotes';
+// import UserRequestedQuantums from '../components/UserRequests/UserRequestedQuantums';
+// import UserRequestedPYQs from '../components/UserRequests/UserRequestedPyqs';
+// import UserRequestedRoadmaps from '../components/UserRequests/UserRequestedRoadmaps';
+// import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSyllabus';
 
 // const { Content, Sider } = Layout;
 // const { SubMenu } = Menu;
@@ -241,7 +255,7 @@ export default Home;
 
 // const Home: React.FC = () => {
 //   const [collapsed, setCollapsed] = useState(false);
-//   const [activeView, setActiveView] = useState('dashboard'); // Default view
+//   const [activeView, setActiveView] = useState('dashboard');
 
 //   const {
 //     token: { colorBgContainer },
@@ -301,6 +315,18 @@ export default Home;
 //         },
 //       ],
 //     },
+//     {
+//       key: 'userRequests',
+//       label: 'User Requests',
+//       icon: <UserOutlined />,
+//       children: [
+//         { key: 'userReqNotes', label: 'Notes', icon: <FileTextOutlined /> },
+//         { key: 'userReqPYQs', label: 'PYQs', icon: <AppstoreOutlined /> },
+//         { key: 'userReqQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
+//         { key: 'userReqRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
+//         { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
+//       ],
+//     },
 //   ];
 
 //   const handleMenuClick = (key: string) => {
@@ -309,7 +335,6 @@ export default Home;
 
 //   return (
 //     <Layout style={{ minHeight: '100vh' }}>
-//       {/* Sidebar */}
 //       <Sider
 //         collapsible
 //         collapsed={collapsed}
@@ -351,7 +376,6 @@ export default Home;
 //         </Menu>
 //       </Sider>
 
-//       {/* Main Layout Content */}
 //       <Layout>
 //         <Content
 //           style={{
@@ -370,17 +394,25 @@ export default Home;
 //               maxHeight: '100vh',
 //             }}
 //           >
+//             {/* Existing Views */}
 //             {activeView === 'dashboard' && <Dashboard />}
 //             {activeView === 'Users' && <Users />}
 //             {activeView === 'carousel' && <Carousel />}
 //             {activeView === 'notesNew' && <NewNotes />}
-//             {activeView === 'notesManage' && <ManageNotes/>}
-//             {activeView === 'quantumNew' && <NewQuantums/>}
-//             {activeView === 'quantumManage' && <ManageQuantum/>}
-//             {activeView === 'pyqNew' && <NewPYQ/>}
-//             {activeView === 'pyqManage' && <ManagePYQs/>}
+//             {activeView === 'notesManage' && <ManageNotes />}
+//             {activeView === 'quantumNew' && <NewQuantums />}
+//             {activeView === 'quantumManage' && <ManageQuantum />}
+//             {activeView === 'pyqNew' && <NewPYQ />}
+//             {activeView === 'pyqManage' && <ManagePYQs />}
 //             {activeView === 'syllabusNew' && <NewSyllabus />}
-//             {activeView === 'syllabusManage' && <ManageSyllabus/>}
+//             {activeView === 'syllabusManage' && <ManageSyllabus />}
+
+//             {/* New User Request Views (Placeholders for now) */}
+//             {activeView === 'userReqNotes' && <UserRequestedNotes/>}
+//             {activeView === 'userReqPYQs' && <UserRequestedPYQs/>}
+//             {activeView === 'userReqQuantum' && <UserRequestedQuantums/>}
+//             {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps/>}
+//             {activeView === 'userReqSyllabus' && <UserRequestedSyllabus/>}
 //           </div>
 //         </Content>
 //       </Layout>
