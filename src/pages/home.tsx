@@ -20,6 +20,11 @@ import ManageNotes from '../components/Notes/ManageNotes';
 import ManageQuantum from '../components/Quantums/ManageQuantums';
 import ManageSyllabus from '../components/Syllabus/ManageSyllabus';
 import ManagePYQs from '../components/PYQs/ManagePYQ';
+import UserRequestedNotes from '../components/UserRequests/UserRequestedNotes';
+import UserRequestedQuantums from '../components/UserRequests/UserRequestedQuantums';
+import UserRequestedPYQs from '../components/UserRequests/UserRequestedPyqs';
+import UserRequestedRoadmaps from '../components/UserRequests/UserRequestedRoadmaps';
+import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSyllabus';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -186,11 +191,11 @@ const Home: React.FC = () => {
             {activeView === 'syllabusManage' && <ManageSyllabus />}
 
             {/* New User Request Views (Placeholders for now) */}
-            {activeView === 'userReqNotes' && <div>User Requested Notes View</div>}
-            {activeView === 'userReqPYQs' && <div>User Requested PYQs View</div>}
-            {activeView === 'userReqQuantum' && <div>User Requested Quantum View</div>}
-            {activeView === 'userReqRoadmaps' && <div>User Requested Roadmaps View</div>}
-            {activeView === 'userReqSyllabus' && <div>User Requested Syllabus View</div>}
+            {activeView === 'userReqNotes' && <UserRequestedNotes/>}
+            {activeView === 'userReqPYQs' && <UserRequestedPYQs/>}
+            {activeView === 'userReqQuantum' && <UserRequestedQuantums/>}
+            {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps/>}
+            {activeView === 'userReqSyllabus' && <UserRequestedSyllabus/>}
           </div>
         </Content>
       </Layout>
