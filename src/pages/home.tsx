@@ -26,6 +26,7 @@ import UserRequestedRoadmaps from '../components/UserRequests/UserRequestedRoadm
 import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSyllabus';
 import UsersVersion12 from '../components/Users/UsersVersion12';
 import UsersOld from '../components/Users/UsersOld';
+import Roadmap from '../components/Placement/roadmap';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -119,6 +120,16 @@ const Home: React.FC = () => {
         { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
       ],
     },
+    {
+      key: 'placement',
+      label: 'Placement',
+      icon: <VideoCameraOutlined />,
+      children: [
+        { key: 'aptitude_practice', label: 'Aptitude Practice', icon: <AppstoreAddOutlined /> },
+        { key: 'interview_questions', label: 'Interview Questions', icon: <AppstoreAddOutlined /> },
+        { key: 'roadmap', label: 'Roadmap', icon: <AppstoreAddOutlined /> },
+      ],
+    },
   ];
 
   const handleMenuClick = (key: string) => {
@@ -203,6 +214,9 @@ const Home: React.FC = () => {
             {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
             {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps />}
             {activeView === 'userReqSyllabus' && <UserRequestedSyllabus />}
+            {activeView === 'aptitude_practice' && <UserRequestedQuantums />}
+            {activeView === 'interview_questions' && <UserRequestedRoadmaps />}
+            {activeView === 'roadmap' && <Roadmap/>}
           </div>
         </Content>
       </Layout>
