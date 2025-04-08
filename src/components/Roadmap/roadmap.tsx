@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import NewRoadmap from '../Placement/newroadmap'; // Import NewCarousel component
-import ManageRoadmap from '../Placement/manageroadmap'; // Import ManageCarousel component
+import NewRoadmap from './newroadmap'; // Import NewCarousel component
+import ManageRoadmap from './manageroadmap'; // Import ManageCarousel component
 
 const { Content } = Layout;
 

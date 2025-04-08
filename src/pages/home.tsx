@@ -26,7 +26,7 @@ import UserRequestedRoadmaps from '../components/UserRequests/UserRequestedRoadm
 import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSyllabus';
 import UsersVersion12 from '../components/Users/UsersVersion12';
 import UsersOld from '../components/Users/UsersOld';
-import Roadmap from '../components/Placement/roadmap';
+import Roadmap from '../components/Roadmap/roadmap';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;

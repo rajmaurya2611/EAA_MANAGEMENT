@@ -47,7 +47,7 @@ const encryptAES = (plainText: string): string => {
   }
 };
 
-const ManageRoadmaps: React.FC = () => {
+const ManageRoadmap: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedContentType, setSelectedContentType] = useState<string>('ALL');
   const [categories, setCategories] = useState<string[]>([]);
@@ -309,4 +309,4 @@ const ManageRoadmaps: React.FC = () => {
   );
 };
 
-export default ManageRoadmaps;
+export default ManageRoadmap;
