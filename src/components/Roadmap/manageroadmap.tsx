@@ -208,7 +208,7 @@ const ManageRoadmap: React.FC = () => {
             okText="Yes"
             cancelText="No"
           >
-            <Button danger icon={<DeleteOutlined />}>Delete</Button>
+            <Button type="link" danger> <DeleteOutlined className="text-lg " /></Button>
           </Popconfirm>
         </div>
       ),

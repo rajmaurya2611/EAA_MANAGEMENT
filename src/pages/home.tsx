@@ -27,6 +27,7 @@ import UserRequestedSyllabus from '../components/UserRequests/UserRequestedSylla
 import UsersVersion12 from '../components/Users/UsersVersion12';
 import UsersOld from '../components/Users/UsersOld';
 import Roadmap from '../components/Roadmap/roadmap';
+import InterviewQuestions from '../components/Interview_Question/interview_question';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -215,7 +216,7 @@ const Home: React.FC = () => {
             {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps />}
             {activeView === 'userReqSyllabus' && <UserRequestedSyllabus />}
             {activeView === 'aptitude_practice' && <UserRequestedQuantums />}
-            {activeView === 'interview_questions' && <UserRequestedRoadmaps />}
+            {activeView === 'interview_questions' && <InterviewQuestions/>}
             {activeView === 'roadmap' && <Roadmap/>}
           </div>
         </Content>
