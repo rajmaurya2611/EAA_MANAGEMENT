@@ -64,8 +64,8 @@ const ManagePYQs: React.FC = () => {
 
   const years = ['First_Year', 'Second_Year', 'Third_Year', 'Fourth_Year'];
 
-  // When a year is selected, update the list of branches.
-  // NOTE: We no longer reset the selectedBranch value.
+  // When a year is selected, update the branch list
+  // Conditionally reset selectedBranch (and its dependent values) if current branch is no longer available.
   useEffect(() => {
     if (selectedYear) {
       const yearRef = dbRef(db, `version12/Materials/Pyq/${selectedYear}`);
@@ -73,13 +73,24 @@ const ManagePYQs: React.FC = () => {
         const data = snapshot.val();
         const branchKeys = data ? Object.keys(data) : [];
         setBranches(branchKeys);
-        // Removed: resetting selectedBranch, sessions, and pyqData
+        // If the current branch is not available, reset it and dependents.
+        if (selectedBranch && !branchKeys.includes(selectedBranch)) {
+          setSelectedBranch('');
+          setSessions([]);
+          setPyqData([]);
+        }
       });
+    } else {
+      // Reset branches if no year selected.
+      setBranches([]);
+      setSelectedBranch('');
+      setSessions([]);
+      setPyqData([]);
     }
-  }, [selectedYear]);
+  }, [selectedYear, selectedBranch]);
 
-  // When a branch is selected, update the list of sessions.
-  // NOTE: We no longer reset the selectedSession value.
+  // When a branch is selected, update the session list
+  // Conditionally reset selectedSession if it no longer exists.
   useEffect(() => {
     if (selectedYear && selectedBranch) {
       const sessionRef = dbRef(db, `version12/Materials/Pyq/${selectedYear}/${selectedBranch}`);
@@ -87,10 +98,19 @@ const ManagePYQs: React.FC = () => {
         const data = snapshot.val();
         const sessionKeys = data ? Object.keys(data) : [];
         setSessions(sessionKeys);
-        // Removed: resetting selectedSession and pyqData
+        // If current session is no longer available, reset it and clear PYQ data.
+        if (selectedSession && !sessionKeys.includes(selectedSession)) {
+          setSelectedSession('');
+          setPyqData([]);
+        }
       });
+    } else {
+      // Reset sessions if branch is not selected.
+      setSessions([]);
+      setSelectedSession('');
+      setPyqData([]);
     }
-  }, [selectedBranch, selectedYear]);
+  }, [selectedYear, selectedBranch, selectedSession]);
 
   // Auto-apply filter when all dropdowns have a valid selection.
   useEffect(() => {
@@ -279,7 +299,7 @@ const ManagePYQs: React.FC = () => {
               </Option>
             ))}
           </Select>
-          {/* The Apply button has been removed as the data now loads automatically upon selection */}
+          {/* Apply button is removed since the filter is auto-applied */}
         </div>
         <Input
           placeholder="Search by Subject Name/Code/By"
@@ -293,8 +313,8 @@ const ManagePYQs: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
           <strong>Selected:</strong>{' '}
-          {selectedYear ? selectedYear.replace('_', ' ') : 'None'} /{' '}
-          {selectedBranch || 'None'} / {selectedSession || 'None'}
+          {selectedYear ? selectedYear.replace('_', ' ') : 'None'} / {selectedBranch || 'None'} /{' '}
+          {selectedSession || 'None'}
         </div>
         <div style={{ fontWeight: 'bold' }}>Total PYQs: {totalCount}</div>
       </div>
