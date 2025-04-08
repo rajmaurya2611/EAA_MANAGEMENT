@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import NewCarousel from '../components/Carousel/NewCarousel'; // Import NewCarousel component
-import ManageCarousel from '../components/Carousel/ManageCarousel'; // Import ManageCarousel component
+import NewCarousel from '../Carousel/NewCarousel'; // Import NewCarousel component
+import ManageCarousel from '../Carousel/ManageCarousel'; // Import ManageCarousel component
 
 const { Content } = Layout;
 

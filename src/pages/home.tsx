@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
-import Carousel from './Carousel';
+import Carousel from '../components/Carousel/Carousel';
 import NewNotes from '../components/Notes/NewNotes';
 import NewQuantums from '../components/Quantums/NewQuantums';
 import NewPYQ from '../components/PYQs/NewPYQ';
