@@ -64,39 +64,41 @@ const ManagePYQs: React.FC = () => {
 
   const years = ['First_Year', 'Second_Year', 'Third_Year', 'Fourth_Year'];
 
+  // When a year is selected, update the list of branches.
+  // NOTE: We no longer reset the selectedBranch value.
   useEffect(() => {
     if (selectedYear) {
       const yearRef = dbRef(db, `version12/Materials/Pyq/${selectedYear}`);
       onValue(yearRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          const branchKeys = Object.keys(data);
-          setBranches(branchKeys);
-        } else {
-          setBranches([]);
-        }
-        setSelectedBranch('');
-        setSessions([]);
-        setPyqData([]);
+        const branchKeys = data ? Object.keys(data) : [];
+        setBranches(branchKeys);
+        // Removed: resetting selectedBranch, sessions, and pyqData
       });
     }
   }, [selectedYear]);
 
+  // When a branch is selected, update the list of sessions.
+  // NOTE: We no longer reset the selectedSession value.
   useEffect(() => {
     if (selectedYear && selectedBranch) {
       const sessionRef = dbRef(db, `version12/Materials/Pyq/${selectedYear}/${selectedBranch}`);
       onValue(sessionRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          setSessions(Object.keys(data));
-        } else {
-          setSessions([]);
-        }
-        setSelectedSession('');
-        setPyqData([]);
+        const sessionKeys = data ? Object.keys(data) : [];
+        setSessions(sessionKeys);
+        // Removed: resetting selectedSession and pyqData
       });
     }
-  }, [selectedBranch]);
+  }, [selectedBranch, selectedYear]);
+
+  // Auto-apply filter when all dropdowns have a valid selection.
+  useEffect(() => {
+    if (selectedYear && selectedBranch && selectedSession) {
+      handleApply();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedBranch, selectedSession]);
 
   const handleApply = () => {
     if (!selectedYear || !selectedBranch || !selectedSession) {
@@ -104,7 +106,10 @@ const ManagePYQs: React.FC = () => {
       return;
     }
     setLoading(true);
-    const dataRef = dbRef(db, `version12/Materials/Pyq/${selectedYear}/${selectedBranch}/${selectedSession}`);
+    const dataRef = dbRef(
+      db,
+      `version12/Materials/Pyq/${selectedYear}/${selectedBranch}/${selectedSession}`
+    );
     onValue(dataRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -186,7 +191,12 @@ const ManagePYQs: React.FC = () => {
       dataIndex: 'pdf',
       key: 'pdf',
       render: (text: string) => (
-        <a href={text} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+        <a
+          href={text}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-500 hover:underline"
+        >
           Open
         </a>
       ),
@@ -221,7 +231,15 @@ const ManagePYQs: React.FC = () => {
   return (
     <div style={{ padding: '24px', background: '#fff', minHeight: '80vh' }}>
       <h2 className="text-xl font-bold mb-4">Manage PYQs</h2>
-      <div style={{ marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div
+        style={{
+          marginBottom: '24px',
+          display: 'flex',
+          gap: '16px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <Select
             placeholder="Select Year"
@@ -261,9 +279,7 @@ const ManagePYQs: React.FC = () => {
               </Option>
             ))}
           </Select>
-          <Button type="primary" onClick={handleApply}>
-            Apply
-          </Button>
+          {/* The Apply button has been removed as the data now loads automatically upon selection */}
         </div>
         <Input
           placeholder="Search by Subject Name/Code/By"
@@ -276,7 +292,9 @@ const ManagePYQs: React.FC = () => {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
-          <strong>Selected:</strong> {selectedYear.replace('_', ' ')} / {selectedBranch || 'None'} / {selectedSession || 'None'}
+          <strong>Selected:</strong>{' '}
+          {selectedYear ? selectedYear.replace('_', ' ') : 'None'} /{' '}
+          {selectedBranch || 'None'} / {selectedSession || 'None'}
         </div>
         <div style={{ fontWeight: 'bold' }}>Total PYQs: {totalCount}</div>
       </div>
