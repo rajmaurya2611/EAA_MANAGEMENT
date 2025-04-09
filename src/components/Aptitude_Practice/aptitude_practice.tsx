@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import NewInterviewQuestions from './newaptitude_practice'; // Import NewCarousel component
+import NewAptitudePractice from './newaptitude_practice'; // Import NewCarousel component
 //import ManageInterviewQuestions from './manageinterview_question'; // Import ManageCarousel component
 
 const { Content } = Layout;
@@ -24,7 +24,7 @@ function AptitudePractice() {
           borderRadius: '8px',
         }}
       >
-        <h1>Interview Questions</h1>
+        <h1>Aptitude Practice</h1>
 
         {/* Minimalistic Navbar with "New" and "Manage" options */}
         <Menu
@@ -38,7 +38,7 @@ function AptitudePractice() {
         </Menu>
 
         {/* Render NewCarousel or ManageCarousel based on active tab */}
-        {activeTab === 'new' && <NewInterviewQuestions />}
+        {activeTab === 'new' && <NewAptitudePractice />}
         {/* {activeTab === 'manage' && <ManageInterviewQuestions/>} */}
       </Content>
     </Layout>

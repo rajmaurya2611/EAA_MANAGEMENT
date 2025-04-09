@@ -130,7 +130,7 @@ const QuestionForm = ({ form, onFinish }: { form: any; onFinish: (values: any) =
   </Form>
 );
 
-const SimpleAptitudeAdminPanel: React.FC = () => {
+const NewAptitudePractice: React.FC = () => {
   // Full tree data loaded from Firebase.
   const [treeOptions, setTreeOptions] = useState<any[]>([]);
   // selectedValues array stores the key selected at each level.
@@ -302,7 +302,6 @@ const SimpleAptitudeAdminPanel: React.FC = () => {
   return (
     <Layout style={{ padding: 24, background: '#fff', minHeight: '90vh' }}>
       <Content>
-        <h2>Aptitude Practice Admin Panel</h2>
         {/* Breadcrumb shows the selected section path */}
         <Breadcrumb style={{ marginBottom: 16 }}>
           {selectedValues.map((val, idx) => (
@@ -378,13 +377,13 @@ const SimpleAptitudeAdminPanel: React.FC = () => {
           </Button>,
         ]}
       >
-        <p>Node or slash question added successfully</p>
+        <p> Question added successfully</p>
       </Modal>
     </Layout>
   );
 };
 
-export default SimpleAptitudeAdminPanel;
+export default NewAptitudePractice;
 
 
 
