@@ -31,6 +31,8 @@ import InterviewQuestions from '../components/Interview_Question/interview_quest
 import AptitudePractice from '../components/Aptitude_Practice/aptitude_practice';
 import PlacementNotes from '../components/Placement_Notes/placement_notes';
 import Opportunities from '../components/Opportunities/opportunities';
+import NewBooks from '../components/Books/NewBooks';
+import ManageBooks from '../components/Books/ManageBooks';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -108,6 +110,15 @@ const Home: React.FC = () => {
           children: [
             { key: 'syllabusNew', label: 'New', icon: <PlusOutlined /> },
             { key: 'syllabusManage', label: 'Manage', icon: <EditOutlined /> },
+          ],
+        },
+        {
+          key: 'books',
+          label: 'Books',
+          icon: <FileTextOutlined />,
+          children: [
+            { key: 'booksNew', label: 'New', icon: <PlusOutlined /> },
+            { key: 'booksManage', label: 'Manage', icon: <EditOutlined /> },
           ],
         },
       ],
@@ -215,6 +226,8 @@ const Home: React.FC = () => {
             {activeView === 'pyqManage' && <ManagePYQs />}
             {activeView === 'syllabusNew' && <NewSyllabus />}
             {activeView === 'syllabusManage' && <ManageSyllabus />}
+            {activeView === 'booksNew' && <NewBooks />}
+            {activeView === 'booksManage' && <ManageBooks/>}
             {activeView === 'userReqNotes' && <UserRequestedNotes />}
             {activeView === 'userReqPYQs' && <UserRequestedPYQs />}
             {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
