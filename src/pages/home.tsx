@@ -30,6 +30,7 @@ import Roadmap from '../components/Roadmap/roadmap';
 import InterviewQuestions from '../components/Interview_Question/interview_question';
 import AptitudePractice from '../components/Aptitude_Practice/aptitude_practice';
 import PlacementNotes from '../components/Placement_Notes/placement_notes';
+import Opportunities from '../components/Opportunities/opportunities';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -132,7 +133,7 @@ const Home: React.FC = () => {
         { key: 'interview_questions', label: 'Interview Questions', icon: <AppstoreAddOutlined /> },
         { key: 'roadmap', label: 'Roadmap', icon: <AppstoreAddOutlined /> },
         { key: 'placement_notes', label: 'Placement Notes', icon: <AppstoreAddOutlined /> },
-        { key: 'oppurtunities', label: 'Oppurtunities', icon: <AppstoreAddOutlined /> },
+        { key: 'opportunities', label: 'Opportunities', icon: <AppstoreAddOutlined /> },
       ],
     },
   ];
@@ -223,7 +224,7 @@ const Home: React.FC = () => {
             {activeView === 'interview_questions' && <InterviewQuestions/>}
             {activeView === 'roadmap' && <Roadmap/>}
             {activeView === 'placement_notes' && <PlacementNotes/>}
-            {activeView === 'oppurtunities' && <PlacementNotes/>}
+            {activeView === 'opportunities' && <Opportunities/>}
           </div>
         </Content>
       </Layout>
