@@ -33,6 +33,7 @@ import PlacementNotes from '../components/Placement_Notes/placement_notes';
 import Opportunities from '../components/Opportunities/opportunities';
 import NewBooks from '../components/Books/NewBooks';
 import ManageBooks from '../components/Books/ManageBooks';
+import InfoCards from '../components/Info_Cards/infoCards';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -69,6 +70,7 @@ const Home: React.FC = () => {
       icon: <VideoCameraOutlined />,
       children: [
         { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
+        { key: 'infoCards', label: 'Info Cards', icon: <AppstoreAddOutlined /> },
       ],
     },
     {
@@ -238,6 +240,7 @@ const Home: React.FC = () => {
             {activeView === 'roadmap' && <Roadmap/>}
             {activeView === 'placement_notes' && <PlacementNotes/>}
             {activeView === 'opportunities' && <Opportunities/>}
+            {activeView === 'infoCards' && <InfoCards/>}
           </div>
         </Content>
       </Layout>
