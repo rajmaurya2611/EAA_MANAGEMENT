@@ -34,6 +34,7 @@ import Opportunities from '../components/Opportunities/opportunities';
 import NewBooks from '../components/Books/NewBooks';
 import ManageBooks from '../components/Books/ManageBooks';
 import InfoCards from '../components/Info_Cards/infoCards';
+import JoinTeamApplications from '../components/JoinTeamApplication/joinTeamApplication';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -71,6 +72,7 @@ const Home: React.FC = () => {
       children: [
         { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
         { key: 'infoCards', label: 'Info Cards', icon: <AppstoreAddOutlined /> },
+        { key: 'jointeamappliactions', label: 'Join Team Application', icon: <AppstoreAddOutlined /> },
       ],
     },
     {
@@ -241,6 +243,7 @@ const Home: React.FC = () => {
             {activeView === 'placement_notes' && <PlacementNotes/>}
             {activeView === 'opportunities' && <Opportunities/>}
             {activeView === 'infoCards' && <InfoCards/>}
+            {activeView === 'jointeamappliactions' && <JoinTeamApplications/>}
           </div>
         </Content>
       </Layout>
