@@ -76,7 +76,7 @@ const ManageInfoCards: React.FC = () => {
           head: decryptAES(value.head),
           body: decryptAES(value.body),
           bg: decryptAES(value.bg),
-          rank: parseInt(decryptAES(value.rank)),
+          rank: parseInt(value.rank), // rank is now stored as plain number
           date: value.date || '',
           time: value.time || '',
         }));
@@ -100,23 +100,18 @@ const ManageInfoCards: React.FC = () => {
 
   const handleModalOk = async () => {
     const values = await form.validateFields();
-    if (!values.head || !values.body || !values.bg || !values.rank) {
+    if (!values.head || !values.body || !values.bg || values.rank == null) {
       message.error('Please fill in all fields');
       return;
     }
 
     const { head, body, bg, rank } = values;
 
-    const encryptedHead = encryptAES(head);
-    const encryptedBody = encryptAES(body);
-    const encryptedBg = encryptAES(bg);
-    const encryptedRank = encryptAES(rank.toString());
-
     const updatedCard = {
-      head: encryptedHead,
-      body: encryptedBody,
-      bg: encryptedBg,
-      rank: encryptedRank,
+      head: encryptAES(head),
+      body: encryptAES(body),
+      bg: encryptAES(bg),
+      rank: Number(rank), // store as plain number
       date: dayjs().format('DD/MM/YYYY'),
       time: dayjs().format('HH:mm A'),
     };
@@ -189,7 +184,7 @@ const ManageInfoCards: React.FC = () => {
             cancelText="No"
           >
             <Button type="link" danger>
-                <DeleteOutlined className="text-lg " />
+              <DeleteOutlined className="text-lg" />
             </Button>
           </Popconfirm>
         </Space>

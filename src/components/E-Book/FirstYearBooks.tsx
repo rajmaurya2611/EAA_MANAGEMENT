@@ -29,7 +29,7 @@ interface BranchBooks {
   books: { [noteId: string]: any };
 }
 
-const ThirdYearBooks: React.FC = () => {
+const FirstYearBooks: React.FC = () => {
   const [branches, setBranches] = useState<BranchBooks[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -46,7 +46,7 @@ const ThirdYearBooks: React.FC = () => {
 
   // Listen for branches at the specified path
   useEffect(() => {
-    const booksRef = dbRef(db, 'version12/Materials/Books/Third_Year');
+    const booksRef = dbRef(db, 'version12/Materials/E-Book/First_Year');
     const unsubscribe = onValue(booksRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -97,8 +97,8 @@ const ThirdYearBooks: React.FC = () => {
     const encryptedSubCode = encryptAES(sub_code);
     const encryptedSubName = encryptAES(sub_name);
     const encryptedBy = encryptAES(by);
-    // The path for the new subject will be: version12/Materials/Books/Third_Year/<newBranchName>
-    const branchPath = `version12/Materials/Books/Third_Year/${newBranchName}`;
+    // The path for the new subject will be: version12/Materials/E-Book/First_Year/<newBranchName>
+    const branchPath = `version12/Materials/E-Book/First_Year/${newBranchName}`;
     const newSubjectRef = push(dbRef(db, branchPath));
     const newSubjectId = newSubjectRef.key;
     const subjectData = {
@@ -154,7 +154,7 @@ const ThirdYearBooks: React.FC = () => {
     const encryptedSubCode = encryptAES(sub_code);
     const encryptedSubName = encryptAES(sub_name);
     const encryptedBy = encryptAES(by);
-    const branchPath = `version12/Materials/Books/Third_Year/${selectedBranch}`;
+    const branchPath = `version12/Materials/E-Book/First_Year/${selectedBranch}`;
     const newNoteRef = push(dbRef(db, branchPath));
     const newNoteId = newNoteRef.key;
     const noteData = {
@@ -342,4 +342,4 @@ const ThirdYearBooks: React.FC = () => {
   );
 };
 
-export default ThirdYearBooks;
+export default FirstYearBooks;

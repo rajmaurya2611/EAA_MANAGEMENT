@@ -47,7 +47,7 @@ const encryptAES = (plainText: string): string => {
   }
 };
 
-const ManageBooks: React.FC = () => {
+const ManageEBooks: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [branches, setBranches] = useState<string[]>([]);
@@ -63,7 +63,7 @@ const ManageBooks: React.FC = () => {
 
   useEffect(() => {
     if (selectedYear) {
-      const yearRef = dbRef(db, `version12/Materials/Books/${selectedYear}`);
+      const yearRef = dbRef(db, `version12/Materials/E-Book/${selectedYear}`);
       onValue(yearRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -81,7 +81,7 @@ const ManageBooks: React.FC = () => {
       return;
     }
     setLoading(true);
-    const booksRef = dbRef(db, `version12/Materials/Books/${selectedYear}/${selectedBranch}`);
+    const booksRef = dbRef(db, `version12/Materials/E-Book/${selectedYear}/${selectedBranch}`);
     onValue(booksRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -122,7 +122,7 @@ const ManageBooks: React.FC = () => {
   const handleUpdate = async () => {
     try {
       const values = await editForm.validateFields();
-      const path = `version12/Materials/Books/${selectedYear}/${selectedBranch}/${editingNote.id}`;
+      const path = `version12/Materials/E-Book/${selectedYear}/${selectedBranch}/${editingNote.id}`;
       const updatedData = {
         id: editingNote.id,
         date: new Date().toLocaleDateString(),
@@ -143,7 +143,7 @@ const ManageBooks: React.FC = () => {
   };
 
   const handleDelete = async (noteId: string) => {
-    const path = `version12/Materials/Books/${selectedYear}/${selectedBranch}/${noteId}`;
+    const path = `version12/Materials/E-Book/${selectedYear}/${selectedBranch}/${noteId}`;
     try {
       await remove(dbRef(db, path));
       message.success('Note deleted successfully');
@@ -298,4 +298,4 @@ const ManageBooks: React.FC = () => {
   );
 };
 
-export default ManageBooks;
+export default ManageEBooks;

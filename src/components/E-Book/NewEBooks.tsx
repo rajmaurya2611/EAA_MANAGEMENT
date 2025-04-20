@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import FirstYearBooks from '../../components/Books/FirstYearBooks';
-import SecondYearBooks from '../../components/Books/SecondYearBooks';
-import ThirdYearBooks from '../../components/Books/ThirdYearBooks';
-import FourthYearBooks from '../../components/Books/FourthYearBooks';
+import FirstYearBooks from './FirstYearBooks';
+import SecondYearBooks from './SecondYearBooks';
+import ThirdYearBooks from './ThirdYearBooks';
+import FourthYearBooks from './FourthYearBooks';
 
 const { Content } = Layout;
 
-const NewBooks: React.FC = () => {
+const NewEBooks: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('first'); // Default to 1st Year
 
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -41,4 +41,4 @@ const NewBooks: React.FC = () => {
   );
 };
 
-export default NewBooks;
+export default NewEBooks;

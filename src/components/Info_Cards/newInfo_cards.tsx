@@ -26,7 +26,7 @@ interface InfoCardData {
   head: string;
   body: string;
   bg: string;
-  rank: string;  // Rank will be encrypted as well
+  rank: number;  // Rank is now a plain integer, not encrypted
   date: string;
   time: string;
 }
@@ -40,56 +40,44 @@ const NewInfoCard: React.FC = () => {
   const onFinish = async (values: any) => {
     const { head, body, bg, rank } = values;
 
-    // Ensure all fields are filled in
     if (!head || !body || !bg || !rank) {
       message.error('Please fill in all the fields.');
       return;
     }
 
-    // Get current date and time
     const currentDate = dayjs().format('DD/MM/YYYY');
     const currentTime = dayjs().format('HH:mm A');
-    
-    // Encrypt the fields before saving
+
     const encryptedHead = encryptAES(head);
     const encryptedBody = encryptAES(body);
     const encryptedBg = encryptAES(bg);
-    const encryptedRank = encryptAES(rank.toString());  // Encrypt rank as well
 
-    // Data object for the new info card
     const newCard: InfoCardData = {
       head: encryptedHead,
       body: encryptedBody,
       bg: encryptedBg,
-      rank: encryptedRank,
+      rank: Number(rank), // Not encrypted, saved as integer
       date: currentDate,
       time: currentTime,
     };
 
-    // Push new card to Firebase under infoCards node
     const newCardRef = push(dbRef(db, 'version12/infoCards'));
+
     try {
       await set(newCardRef, newCard);
-      // Show success modal
       setModalTitle('Success');
       setModalMessage('Info card added successfully!');
       setIsModalVisible(true);
-      form.resetFields(); // Reset form fields after successful submission
+      form.resetFields();
     } catch (error) {
-      // Show error modal
       setModalTitle('Error');
       setModalMessage('Failed to add info card.');
       setIsModalVisible(true);
     }
   };
 
-  const handleOk = () => {
-    setIsModalVisible(false);  // Close modal on OK click
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);  // Close modal on Cancel click
-  };
+  const handleOk = () => setIsModalVisible(false);
+  const handleCancel = () => setIsModalVisible(false);
 
   return (
     <div style={{ margin: '20px' }}>
@@ -102,7 +90,7 @@ const NewInfoCard: React.FC = () => {
         >
           <Input placeholder="Enter heading" />
         </Form.Item>
-        
+
         <Form.Item
           label="Body"
           name="body"
@@ -110,7 +98,7 @@ const NewInfoCard: React.FC = () => {
         >
           <Input.TextArea placeholder="Enter body content" />
         </Form.Item>
-        
+
         <Form.Item
           label="Background Color"
           name="bg"
@@ -118,15 +106,15 @@ const NewInfoCard: React.FC = () => {
         >
           <Input placeholder="Enter background color" />
         </Form.Item>
-        
+
         <Form.Item
           label="Rank"
           name="rank"
           rules={[{ required: true, message: 'Please enter a rank' }]}
         >
-          <Input type="number" placeholder="Enter rank" />
+          <Input type="number" placeholder="Enter rank (number only)" />
         </Form.Item>
-        
+
         <Form.Item>
           <Button type="primary" htmlType="submit">
             Add Info Card
@@ -134,7 +122,6 @@ const NewInfoCard: React.FC = () => {
         </Form.Item>
       </Form>
 
-      {/* Modal for showing success or error */}
       <Modal
         title={modalTitle}
         visible={isModalVisible}

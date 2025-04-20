@@ -31,8 +31,8 @@ import InterviewQuestions from '../components/Interview_Question/interview_quest
 import AptitudePractice from '../components/Aptitude_Practice/aptitude_practice';
 import PlacementNotes from '../components/Placement_Notes/placement_notes';
 import Opportunities from '../components/Opportunities/opportunities';
-import NewBooks from '../components/Books/NewBooks';
-import ManageBooks from '../components/Books/ManageBooks';
+import NewEBooks from '../components/E-Book/NewEBooks';
+import ManageEBooks from '../components/E-Book/ManageEBooks';
 import InfoCards from '../components/Info_Cards/infoCards';
 import JoinTeamApplications from '../components/JoinTeamApplication/joinTeamApplication';
 
@@ -117,8 +117,8 @@ const Home: React.FC = () => {
           ],
         },
         {
-          key: 'books',
-          label: 'Books',
+          key: 'E-book',
+          label: 'E-Books',
           icon: <FileTextOutlined />,
           children: [
             { key: 'booksNew', label: 'New', icon: <PlusOutlined /> },
@@ -230,8 +230,8 @@ const Home: React.FC = () => {
             {activeView === 'pyqManage' && <ManagePYQs />}
             {activeView === 'syllabusNew' && <NewSyllabus />}
             {activeView === 'syllabusManage' && <ManageSyllabus />}
-            {activeView === 'booksNew' && <NewBooks />}
-            {activeView === 'booksManage' && <ManageBooks/>}
+            {activeView === 'booksNew' && <NewEBooks />}
+            {activeView === 'booksManage' && <ManageEBooks/>}
             {activeView === 'userReqNotes' && <UserRequestedNotes />}
             {activeView === 'userReqPYQs' && <UserRequestedPYQs />}
             {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
