@@ -35,6 +35,7 @@ import NewEBooks from '../components/E-Book/NewEBooks';
 import ManageEBooks from '../components/E-Book/ManageEBooks';
 import InfoCards from '../components/Info_Cards/infoCards';
 import JoinTeamApplications from '../components/JoinTeamApplication/joinTeamApplication';
+import ManageUserContributedNotes from '../components/UserContributions/UserContributedNotes';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -125,6 +126,18 @@ const Home: React.FC = () => {
             { key: 'booksManage', label: 'Manage', icon: <EditOutlined /> },
           ],
         },
+      ],
+    },
+    {
+      key: 'usercontributions',
+      label: 'User Contributions',
+      icon: <UserOutlined />,
+      children: [
+        { key: 'userContributedNotes', label: 'Notes', icon: <FileTextOutlined /> },
+        { key: 'userContributedPYQs', label: 'PYQs', icon: <AppstoreOutlined /> },
+        { key: 'userContributedQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
+        { key: 'userContributedRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
+        { key: 'userContributedSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
       ],
     },
     {
@@ -244,6 +257,7 @@ const Home: React.FC = () => {
             {activeView === 'opportunities' && <Opportunities/>}
             {activeView === 'infoCards' && <InfoCards/>}
             {activeView === 'jointeamappliactions' && <JoinTeamApplications/>}
+            {activeView === 'userContributedNotes' && <ManageUserContributedNotes/>}
           </div>
         </Content>
       </Layout>
