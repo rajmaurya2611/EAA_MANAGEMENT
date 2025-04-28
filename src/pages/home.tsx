@@ -36,6 +36,10 @@ import ManageEBooks from '../components/E-Book/ManageEBooks';
 import InfoCards from '../components/Info_Cards/infoCards';
 import JoinTeamApplications from '../components/JoinTeamApplication/joinTeamApplication';
 import ManageUserContributedNotes from '../components/UserContributions/UserContributedNotes';
+import ManageUserContributedEbooks from '../components/UserContributions/UserContributedEbooks';
+import ManageUserContributedQuantums from '../components/UserContributions/UserContributedQuantum';
+import ManageUserContributedPyqs from '../components/UserContributions/UserContributedPyqs';
+import ManageUserContributedSyllabus from '../components/UserContributions/UserContributedSyllabus';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -134,9 +138,9 @@ const Home: React.FC = () => {
       icon: <UserOutlined />,
       children: [
         { key: 'userContributedNotes', label: 'Notes', icon: <FileTextOutlined /> },
+        { key: 'userContributedEbooks', label: 'E-Books', icon: <FileTextOutlined /> },
         { key: 'userContributedPYQs', label: 'PYQs', icon: <AppstoreOutlined /> },
         { key: 'userContributedQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
-        { key: 'userContributedRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
         { key: 'userContributedSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
       ],
     },
@@ -258,6 +262,10 @@ const Home: React.FC = () => {
             {activeView === 'infoCards' && <InfoCards/>}
             {activeView === 'jointeamappliactions' && <JoinTeamApplications/>}
             {activeView === 'userContributedNotes' && <ManageUserContributedNotes/>}
+            {activeView === 'userContributedEbooks' && <ManageUserContributedEbooks/>}
+            {activeView === 'userContributedQuantum' && <ManageUserContributedQuantums/>}
+            {activeView === 'userContributedPYQs' && <ManageUserContributedPyqs/>}
+            {activeView === 'userContributedSyllabus' && <ManageUserContributedSyllabus/>}
           </div>
         </Content>
       </Layout>
