@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, getIdTokenResult } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 
 function Login() {
@@ -12,9 +12,23 @@ function Login() {
   const handleLogin = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setError(""); // Reset previous error
+
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      navigate("/home"); // Navigate on success
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const user = userCredential.user;
+
+      if (user) {
+        const idTokenResult = await getIdTokenResult(user);
+
+        if (idTokenResult.claims.isAdmin) {
+          // User is an admin → allow access
+          navigate("/home"); // or navigate("/admin-dashboard")
+        } else {
+          // User is not an admin → block access
+          setError("Unauthorized access. Admins only.");
+          await auth.signOut();
+        }
+      }
     } catch (err: any) {
       console.error("Login error:", err);
       switch (err.code) {
