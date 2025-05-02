@@ -202,7 +202,7 @@ const ManageCarousel: React.FC = () => {
   };
 
   const columns = [
-    { title: 'Template', dataIndex: 'type', key: 'type', render: t => templateMap[t] },
+    { title: 'Template', dataIndex: 'type', key: 'type', render: (t: keyof typeof templateMap) => templateMap[t] },
     {
       title: 'Image',
       key: 'image',
@@ -225,7 +225,7 @@ const ManageCarousel: React.FC = () => {
       title: 'Link',
       dataIndex: 'link',
       key: 'link',
-      render: l => (l ? <a href={l} target="_blank" rel="noopener">Open</a> : null),
+      render: (l: string | undefined) => (l ? <a href={l} target="_blank" rel="noopener">Open</a> : null),
     },
     { title: 'Date', dataIndex: 'date', key: 'date' },
     { title: 'Time', dataIndex: 'time', key: 'time' },

@@ -4,14 +4,12 @@ import {
   Input,
   Button,
   DatePicker,
-  Select,
   Modal,
   Upload,
   Progress,
   message,
 } from 'antd';
 import { UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import CryptoJS from 'crypto-js';
 import { storage, db } from '../../firebaseConfig';
 import {
@@ -23,7 +21,6 @@ import {
 import { ref as dbRef, push, set } from 'firebase/database';
 
 const { TextArea } = Input;
-const { Option } = Select;
 const AES_KEY = import.meta.env.VITE_PLACEMENT_AES_SECRET_KEY;
 
 // AES helper
