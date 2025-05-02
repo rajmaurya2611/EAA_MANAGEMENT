@@ -196,7 +196,6 @@ const ManageInterviewQuestions: React.FC = () => {
 
   return (
     <div style={{ padding:24, background:'#fff', minHeight:'80vh' }}>
-      <h2>Manage Interview Questions</h2>
 
       <div style={{ display:'flex', justifyContent:'space-between', margin:'16px 0' }}>
         <Select

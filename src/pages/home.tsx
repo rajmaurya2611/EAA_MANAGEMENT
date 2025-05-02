@@ -40,6 +40,7 @@ import ManageUserContributedEbooks from '../components/UserContributions/UserCon
 import ManageUserContributedQuantums from '../components/UserContributions/UserContributedQuantum';
 import ManageUserContributedPyqs from '../components/UserContributions/UserContributedPyqs';
 import ManageUserContributedSyllabus from '../components/UserContributions/UserContributedSyllabus';
+import Events from '../components/Events_homepage/events';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -76,6 +77,7 @@ const Home: React.FC = () => {
       icon: <VideoCameraOutlined />,
       children: [
         { key: 'carousel', label: 'Carousel', icon: <AppstoreAddOutlined /> },
+        { key: 'events', label: 'Events', icon: <AppstoreAddOutlined /> },
         { key: 'infoCards', label: 'Info Cards', icon: <AppstoreAddOutlined /> },
         { key: 'jointeamappliactions', label: 'Join Team Application', icon: <AppstoreAddOutlined /> },
       ],
@@ -260,6 +262,7 @@ const Home: React.FC = () => {
             {activeView === 'placement_notes' && <PlacementNotes/>}
             {activeView === 'opportunities' && <Opportunities/>}
             {activeView === 'infoCards' && <InfoCards/>}
+            {activeView === 'events' && <Events/>}
             {activeView === 'jointeamappliactions' && <JoinTeamApplications/>}
             {activeView === 'userContributedNotes' && <ManageUserContributedNotes/>}
             {activeView === 'userContributedEbooks' && <ManageUserContributedEbooks/>}
