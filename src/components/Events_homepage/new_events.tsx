@@ -95,7 +95,7 @@ const NewEvent: React.FC = () => {
       return;
     }
 
-    const eventRef = push(dbRef(db, 'version12/Placement/Events'));
+    const eventRef = push(dbRef(db, 'version12/Events'));
     const eventDate = vals.date.format('DD-MM-YYYY');
 
     const data = {
