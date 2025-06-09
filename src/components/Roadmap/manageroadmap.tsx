@@ -98,7 +98,6 @@ const ManageRoadmap: React.FC = () => {
     });
   };
 
-  // Option 1: Delay modal opening until data is ready and form is populated.
   const handleEdit = async (record: any) => {
     setEditLoading(true);
     const path = `version12/Placement/Roadmaps/${selectedCategory}/${record.id}`;
@@ -109,7 +108,7 @@ const ManageRoadmap: React.FC = () => {
         message.error('Failed to load roadmap for editing.');
         return;
       }
-      
+
       const decryptedRecord = {
         sub_name: decryptAES(data.sub_name),
         sub_code: decryptAES(data.sub_code),
@@ -120,11 +119,8 @@ const ManageRoadmap: React.FC = () => {
         dislikes: data.dislikes,
       };
 
-      // Set the decrypted form values.
       editForm.setFieldsValue(decryptedRecord);
-      // Save the ID needed for update action.
       setEditingRoadmap({ id: data.id });
-      // Now open the modal with pre-filled form.
       setEditModalVisible(true);
     } catch (err) {
       console.error(err);
@@ -138,6 +134,14 @@ const ManageRoadmap: React.FC = () => {
     try {
       const values = await editForm.validateFields();
       const path = `version12/Placement/Roadmaps/${selectedCategory}/${editingRoadmap.id}`;
+
+      // Handle sub_code being undefined, empty, or whitespace only
+      const rawCode = (values.sub_code as string) || '';
+      const trimmedCode = rawCode.trim();
+      const encryptedSubCode = trimmedCode
+        ? encryptAES(trimmedCode)
+        : '';
+
       const updatedData = {
         id: editingRoadmap.id,
         date: new Date().toLocaleDateString(),
@@ -146,14 +150,16 @@ const ManageRoadmap: React.FC = () => {
         contentType: values.contentType,
         dislikes: Number(values.dislikes),
         likes: Number(values.likes),
-        sub_code: encryptAES(values.sub_code),
+        sub_code: encryptedSubCode,
         sub_name: encryptAES(values.sub_name),
       };
+
       await update(dbRef(db, path), updatedData);
       message.success('Roadmap updated successfully');
       setEditModalVisible(false);
       fetchRoadmaps();
     } catch (err) {
+      console.error(err);
       message.error('Failed to update roadmap');
     }
   };
@@ -208,7 +214,7 @@ const ManageRoadmap: React.FC = () => {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger> <DeleteOutlined className="text-lg " /></Button>
+            <Button type="link" danger><DeleteOutlined className="text-lg" /></Button>
           </Popconfirm>
         </div>
       ),
@@ -281,7 +287,7 @@ const ManageRoadmap: React.FC = () => {
             <Form.Item label="Subject Name" name="sub_name" rules={[{ required: true, message: 'Subject Name is required' }]}>
               <Input />
             </Form.Item>
-            <Form.Item label="Subject Code" name="sub_code" rules={[{ required: true, message: 'Subject Code is required' }]}>
+            <Form.Item label="Subject Code" name="sub_code">
               <Input />
             </Form.Item>
             <Form.Item label="Content Type" name="contentType" rules={[{ required: true, message: 'Content Type is required' }]}>
