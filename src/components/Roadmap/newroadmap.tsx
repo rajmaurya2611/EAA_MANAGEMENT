@@ -80,7 +80,7 @@ const NewRoadmap: React.FC = () => {
 
   const addRoadmap = async (values: any, targetCategory: string) => {
     const { contentType, content, sub_code, sub_name, by } = values;
-    if (!content || !sub_code || !sub_name || !by || !contentType) {
+    if (!content || !sub_name || !by || !contentType) { //removed sub_code from required fields sub_code is optional in your downstream logic—you can keep encrypting/saving it exactly as before if it’s present, or just pass an empty string through AES if not.
       message.error('Please fill all required fields.');
       return;
     }
@@ -177,7 +177,7 @@ const NewRoadmap: React.FC = () => {
                 <Input.TextArea placeholder="PDF link or raw HTML content" rows={5} />
               </Form.Item>
               <Form.Item label="Subject Code" name="sub_code">
-                <Input placeholder="e.g. KAS-1234" />
+                <Input placeholder="Input a space here to submit the form if you dont have any code / e.g. KAS-1234" />
               </Form.Item>
               <Form.Item label="Subject Name" name="sub_name" rules={[{ required: true }]}>
                 <Input placeholder="Roadmap Title" />
