@@ -176,7 +176,7 @@ const NewRoadmap: React.FC = () => {
               <Form.Item label="Content" name="content" rules={[{ required: true }]}>
                 <Input.TextArea placeholder="PDF link or raw HTML content" rows={5} />
               </Form.Item>
-              <Form.Item label="Subject Code" name="sub_code" rules={[{ required: true }]}>
+              <Form.Item label="Subject Code" name="sub_code">
                 <Input placeholder="e.g. KAS-1234" />
               </Form.Item>
               <Form.Item label="Subject Name" name="sub_name" rules={[{ required: true }]}>
