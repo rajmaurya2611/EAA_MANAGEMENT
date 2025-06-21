@@ -3,7 +3,7 @@ import { Table, Spin, message, Tag, Select, Modal, Button } from 'antd';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update } from 'firebase/database';
 import CryptoJS from 'crypto-js';
-import { DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+//import { DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
