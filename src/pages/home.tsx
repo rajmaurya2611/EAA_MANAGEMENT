@@ -43,6 +43,7 @@ import ManageUserContributedSyllabus from '../components/UserContributions/UserC
 import Events from '../components/Events_homepage/events';
 import NewLectures from '../components/VideoLectures/NewVideoLectures';
 import ManageLectures from '../components/VideoLectures/ManageVideoLectures';
+import UserRequestedLectures from '../components/UserRequests/UserRequestedVideoLectures';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -167,6 +168,7 @@ const Home: React.FC = () => {
         { key: 'userReqQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
         { key: 'userReqRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
         { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
+        { key: 'userReqLectures', label: 'Lectures', icon: <AppstoreOutlined /> },
       ],
     },
     {
@@ -269,6 +271,7 @@ const Home: React.FC = () => {
             {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
             {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps />}
             {activeView === 'userReqSyllabus' && <UserRequestedSyllabus />}
+            {activeView === 'userReqLectures' && <UserRequestedLectures />}
             {activeView === 'aptitude_practice' && <AptitudePractice/>}
             {activeView === 'interview_questions' && <InterviewQuestions/>}
             {activeView === 'roadmap' && <Roadmap/>}
