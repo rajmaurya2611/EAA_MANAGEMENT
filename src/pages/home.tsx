@@ -44,6 +44,7 @@ import Events from '../components/Events_homepage/events';
 import NewLectures from '../components/VideoLectures/NewVideoLectures';
 import ManageLectures from '../components/VideoLectures/ManageVideoLectures';
 import UserRequestedLectures from '../components/UserRequests/UserRequestedVideoLectures';
+import UserFeedbacks from '../components/Feedback/Feedback';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -83,6 +84,7 @@ const Home: React.FC = () => {
         { key: 'events', label: 'Events', icon: <AppstoreAddOutlined /> },
         { key: 'infoCards', label: 'Info Cards', icon: <AppstoreAddOutlined /> },
         { key: 'jointeamappliactions', label: 'Join Team Application', icon: <AppstoreAddOutlined /> },
+        { key: 'userFeedback', label: 'User Feedbacks', icon: <AppstoreAddOutlined /> },
       ],
     },
     {
@@ -285,6 +287,7 @@ const Home: React.FC = () => {
             {activeView === 'userContributedQuantum' && <ManageUserContributedQuantums/>}
             {activeView === 'userContributedPYQs' && <ManageUserContributedPyqs/>}
             {activeView === 'userContributedSyllabus' && <ManageUserContributedSyllabus/>}
+            { activeView === 'userFeedback' && <UserFeedbacks/>}
           </div>
         </Content>
       </Layout>
