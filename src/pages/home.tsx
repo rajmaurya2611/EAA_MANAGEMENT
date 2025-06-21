@@ -41,6 +41,8 @@ import ManageUserContributedQuantums from '../components/UserContributions/UserC
 import ManageUserContributedPyqs from '../components/UserContributions/UserContributedPyqs';
 import ManageUserContributedSyllabus from '../components/UserContributions/UserContributedSyllabus';
 import Events from '../components/Events_homepage/events';
+import NewLectures from '../components/VideoLectures/NewVideoLectures';
+import ManageLectures from '../components/VideoLectures/ManageVideoLectures';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -130,6 +132,15 @@ const Home: React.FC = () => {
           children: [
             { key: 'booksNew', label: 'New', icon: <PlusOutlined /> },
             { key: 'booksManage', label: 'Manage', icon: <EditOutlined /> },
+          ],
+        },
+         {
+          key: 'lectures',
+          label: 'Lectures',
+          icon: <FileTextOutlined />,
+          children: [
+            { key: 'lecturesNew', label: 'New', icon: <PlusOutlined /> },
+            { key: 'lecturesManage', label: 'Manage', icon: <EditOutlined /> },
           ],
         },
       ],
@@ -251,6 +262,8 @@ const Home: React.FC = () => {
             {activeView === 'syllabusManage' && <ManageSyllabus />}
             {activeView === 'booksNew' && <NewEBooks />}
             {activeView === 'booksManage' && <ManageEBooks/>}
+             {activeView === 'lecturesNew' && <NewLectures />}
+            {activeView === 'lecturesManage' && <ManageLectures/>}
             {activeView === 'userReqNotes' && <UserRequestedNotes />}
             {activeView === 'userReqPYQs' && <UserRequestedPYQs />}
             {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
