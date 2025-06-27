@@ -1,14 +1,20 @@
-// src/routes.ts
-import { RouteObject } from "react-router-dom"; // Import RouteObject for type safety
-import Login from "../pages/loginPage";
-import Home from "../pages/home";
-import { Navigate } from "react-router-dom"; // Ensure Navigate is imported
+import { RouteObject }     from "react-router-dom";
+import { Navigate }        from "react-router-dom";
+import Login               from "../pages/loginPage";
+import Home                from "../pages/home";
+import ProtectedRoute      from "./ProtectedRoutes";
 
-// Define an array of route objects with proper typing
 const routes: RouteObject[] = [
-  { path: "/", element: <Login /> }, // Wrap Login component with JSX syntax
-  { path: "/home", element: <Home /> }, // Wrap Home component with JSX syntax
-  { path: "*", element: <Navigate to="/" /> }, // Redirect for unknown routes
+  { path: "/",    element: <Login /> },
+  {
+    path: "/home",
+    element: (
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    )
+  },
+  { path: "*",    element: <Navigate to="/" replace /> },
 ];
 
 export default routes;
