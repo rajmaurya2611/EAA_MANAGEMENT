@@ -32,17 +32,35 @@ const AES_SECRET_KEY = import.meta.env.VITE_AES_SECRET_KEY!;
 
 const decryptAES = (encryptedText: string) => {
   try {
-    const key = CryptoJS.enc.Utf8.parse(AES_SECRET_KEY);
-    const decrypted = CryptoJS.AES.decrypt(encryptedText, key, {
+    // 1️⃣ remove any spaces/newlines
+    const cleaned = encryptedText.replace(/\s+/g, "");
+
+    // 2️⃣ parse Base64 into a WordArray
+    const ciphertextWA = CryptoJS.enc.Base64.parse(cleaned);
+
+    // 3️⃣ wrap in a CipherParams object
+    const cipherParams = CryptoJS.lib.CipherParams.create({
+      ciphertext: ciphertextWA,
+    });
+
+    // 4️⃣ parse your 16-byte key
+    const keyWA = CryptoJS.enc.Utf8.parse(AES_SECRET_KEY);
+
+    // 5️⃣ decrypt with ECB & PKCS7
+    const decrypted = CryptoJS.AES.decrypt(cipherParams, keyWA, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     });
-    return decrypted.toString(CryptoJS.enc.Utf8) || encryptedText;
-  } catch {
-    console.warn(`Skipping decryption for: ${encryptedText}`);
+
+    // 6️⃣ return plaintext (or fallback to the original on empty)
+    const plain = decrypted.toString(CryptoJS.enc.Utf8);
+    return plain || encryptedText;
+  } catch (err) {
+    console.warn(`Skipping decryption for: ${encryptedText}`, err);
     return encryptedText;
   }
 };
+
 
 interface UserData {
   key: string;
