@@ -194,8 +194,8 @@ const FourthYearVideoLectures: React.FC = () => {
             <Form.Item label="Video Link" name="pdf" rules={[{ required: true }]}>
               <Input placeholder="Enter video URL" />
             </Form.Item>
-            <Form.Item label="Lecture Code" name="sub_code" rules={[{ required: true }]}>
-              <Input placeholder="Enter lecture code" />
+            <Form.Item label="Channel Name" name="sub_code" rules={[{ required: true }]}>
+              <Input placeholder="Enter Channel Name" />
             </Form.Item>
             <Form.Item label="Lecture Name" name="sub_name" rules={[{ required: true }]}>
               <Input placeholder="Enter lecture name" />
@@ -244,8 +244,8 @@ const FourthYearVideoLectures: React.FC = () => {
             <Form.Item label="Video Link" name="pdf" rules={[{ required: true }]}>
               <Input placeholder="Enter video URL" />
             </Form.Item>
-            <Form.Item label="Lecture Code" name="sub_code" rules={[{ required: true }]}>
-              <Input placeholder="Enter lecture code" />
+            <Form.Item label="Channel Name" name="sub_code" rules={[{ required: true }]}>
+              <Input placeholder="Enter Channel Name" />
             </Form.Item>
             <Form.Item label="Lecture Name" name="sub_name" rules={[{ required: true }]}>
               <Input placeholder="Enter lecture name" />
