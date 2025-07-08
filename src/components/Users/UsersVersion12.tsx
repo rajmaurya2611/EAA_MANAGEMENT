@@ -28,31 +28,21 @@ import dayjs, { Dayjs } from "dayjs";
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
+// explicit timestamp format for dayjs parsing
+const TS_FMT = "YYYY-MM-DD HH:mm:ss";
+
 const AES_SECRET_KEY = import.meta.env.VITE_AES_SECRET_KEY!;
 
 const decryptAES = (encryptedText: string) => {
   try {
-    // 1️⃣ remove any spaces/newlines
     const cleaned = encryptedText.replace(/\s+/g, "");
-
-    // 2️⃣ parse Base64 into a WordArray
     const ciphertextWA = CryptoJS.enc.Base64.parse(cleaned);
-
-    // 3️⃣ wrap in a CipherParams object
-    const cipherParams = CryptoJS.lib.CipherParams.create({
-      ciphertext: ciphertextWA,
-    });
-
-    // 4️⃣ parse your 16-byte key
+    const cipherParams = CryptoJS.lib.CipherParams.create({ ciphertext: ciphertextWA });
     const keyWA = CryptoJS.enc.Utf8.parse(AES_SECRET_KEY);
-
-    // 5️⃣ decrypt with ECB & PKCS7
     const decrypted = CryptoJS.AES.decrypt(cipherParams, keyWA, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     });
-
-    // 6️⃣ return plaintext (or fallback to the original on empty)
     const plain = decrypted.toString(CryptoJS.enc.Utf8);
     return plain || encryptedText;
   } catch (err) {
@@ -60,7 +50,6 @@ const decryptAES = (encryptedText: string) => {
     return encryptedText;
   }
 };
-
 
 interface UserData {
   key: string;
@@ -81,9 +70,7 @@ const UsersVersion12: React.FC = () => {
   const [collegeFilter, setCollegeFilter] = useState<string | null>(null);
   const [branchFilter, setBranchFilter] = useState<string | null>(null);
   const [yearFilter, setYearFilter] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<
-    [Dayjs | null, Dayjs | null]
-  >([null, null]);
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([null, null]);
   const [searchText, setSearchText] = useState("");
 
   // Fetch & decrypt data
@@ -105,25 +92,22 @@ const UsersVersion12: React.FC = () => {
           const u = data as Record<string, string>;
           return {
             key: id,
-            name: decryptAES(u.name || ""),
-            year: decryptAES(u.year || ""),
-            email: decryptAES(u.email || ""),
-            college: decryptAES(u.college || ""),
-            branch: decryptAES(u.branch || ""),
+            name:    decryptAES(u.name         || ""),
+            year:    decryptAES(u.year         || ""),
+            email:   decryptAES(u.email        || ""),
+            college: decryptAES(u.college      || ""),
+            branch:  decryptAES(u.branch       || ""),
+            // use original uppercase keys:
             registrationTime: u.RegistrationTime || "",
             registrationDate: u.RegistrationDate || "",
           };
         }
       );
 
-      // sort by combined date+time descending
+      // Sort by combined date+time descending
       const sorted = arr.sort((a, b) => {
-        const aTs = dayjs(
-          `${a.registrationDate} ${a.registrationTime}`
-        ).valueOf();
-        const bTs = dayjs(
-          `${b.registrationDate} ${b.registrationTime}`
-        ).valueOf();
+        const aTs = dayjs(`${a.registrationDate} ${a.registrationTime}`, TS_FMT).valueOf();
+        const bTs = dayjs(`${b.registrationDate} ${b.registrationTime}`, TS_FMT).valueOf();
         return bTs - aTs;
       });
 
@@ -155,7 +139,7 @@ const UsersVersion12: React.FC = () => {
     if (dateRange[0] && dateRange[1]) {
       const [start, end] = dateRange;
       res = res.filter((u) => {
-        const d = dayjs(u.registrationDate);
+        const d = dayjs(u.registrationDate, "YYYY-MM-DD");
         return (
           d.isAfter(start.startOf("day")) &&
           d.isBefore(end.endOf("day"))
@@ -172,7 +156,14 @@ const UsersVersion12: React.FC = () => {
       );
     }
 
-    setFilteredUsers(res);
+    // Sort filtered users based on date+time descending
+    const sorted = res.sort((a, b) => {
+      const aTs = dayjs(`${a.registrationDate} ${a.registrationTime}`, TS_FMT).valueOf();
+      const bTs = dayjs(`${b.registrationDate} ${b.registrationTime}`, TS_FMT).valueOf();
+      return bTs - aTs;
+    });
+
+    setFilteredUsers(sorted);
   }, [
     collegeFilter,
     branchFilter,
@@ -318,13 +309,16 @@ const UsersVersion12: React.FC = () => {
 
         <RangePicker
           value={dateRange}
-          onChange={(r) => setDateRange(r || [null, null])}
+          onChange={(dates) => setDateRange(dates || [null, null])}
+          style={{ width: 300 }}
         />
 
         <Button
-          onClick={resetFilters}
           icon={<ReloadOutlined />}
-        />
+          onClick={resetFilters}
+        >
+          Reset Filters
+        </Button>
       </div>
 
       {/* Table */}
@@ -342,6 +336,7 @@ const UsersVersion12: React.FC = () => {
           dataSource={filteredUsers}
           pagination={{ pageSize: 10 }}
           scroll={{ x: true }}
+          rowKey="key"
         />
       )}
     </div>
