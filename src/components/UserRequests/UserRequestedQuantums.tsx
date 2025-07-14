@@ -6,163 +6,181 @@ import CryptoJS from 'crypto-js';
 
 const { Option } = Select;
 
-const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY;
+// AES keys
+const USER_AES_SECRET_KEY  = import.meta.env.VITE_AES_SECRET_KEY as string;              // A1B2C3D4E5F6G7H8
+const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;   // YADURAJU12345678
 
-const decryptAES = (encryptedText: string): string => {
+// AES decrypt helper
+function decryptAES(encryptedText: string, key: string): string {
   try {
-    const key = CryptoJS.enc.Utf8.parse(NOTES_AES_SECRET_KEY);
-    const decrypted = CryptoJS.AES.decrypt(encryptedText.trim(), key, {
+    const parsedKey = CryptoJS.enc.Utf8.parse(key);
+    const dec = CryptoJS.AES.decrypt(encryptedText.trim(), parsedKey, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     });
-    return decrypted.toString(CryptoJS.enc.Utf8);
-  } catch (error) {
-    console.error('Decryption failed:', error);
+    return dec.toString(CryptoJS.enc.Utf8);
+  } catch (err) {
+    console.error('AES decrypt error:', err);
     return encryptedText;
   }
-};
+}
 
-const encryptAES = (plainText: string): string => {
+// AES encrypt helper
+function encryptAES(plainText: string, key: string): string {
   try {
-    const key = CryptoJS.enc.Utf8.parse(NOTES_AES_SECRET_KEY);
-    const encrypted = CryptoJS.AES.encrypt(plainText, key, {
+    const parsedKey = CryptoJS.enc.Utf8.parse(key);
+    return CryptoJS.AES.encrypt(plainText, parsedKey, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
-    });
-    return encrypted.toString();
-  } catch (error) {
-    console.error('Encryption failed:', error);
+    }).toString();
+  } catch (err) {
+    console.error('AES encrypt error:', err);
     return plainText;
   }
-};
+}
+
+interface QuantumRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userCollege: string;
+  date: string;
+  time: string;
+  status: string;
+  text: string;
+}
 
 const UserRequestedQuantums: React.FC = () => {
-  const [allData, setAllData] = useState<any[]>([]);
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [userData, setUserData] = useState<Record<string, { name: string; college: string }>>({});
+  const [allData, setAllData] = useState<QuantumRecord[]>([]);
+  const [filteredData, setFilteredData] = useState<QuantumRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<QuantumRecord | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [statusChangedTo, setStatusChangedTo] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusChangedTo, setStatusChangedTo] = useState<string | null>(null);
 
+  // 1) Load & decrypt users
   useEffect(() => {
-    const ref = dbRef(db, 'version12/UserRequests/Quantum');
+    const usersRef = dbRef(db, 'version12/users');
+    const unsub = onValue(usersRef, (snap) => {
+      const raw = snap.val() || {};
+      const map: typeof userData = {};
+      Object.entries(raw).forEach(([uid, entry]: [string, any]) => {
+        map[uid] = {
+          name: decryptAES(entry.name    || '', USER_AES_SECRET_KEY),
+          college: decryptAES(entry.college || '', USER_AES_SECRET_KEY),
+        };
+      });
+      setUserData(map);
+    });
+    return () => unsub();
+  }, []);
 
-    const unsubscribe = onValue(
-      ref,
-      (snapshot) => {
-        const val = snapshot.val();
-        if (!val) {
-          setAllData([]);
-          setFilteredData([]);
-          setLoading(false);
-          return;
-        }
-
-        const parsed = Object.entries(val).map(([id, entry]: [string, any]) => ({
-          id,
-          userId: decryptAES(entry.userId || ''),
-          date: decryptAES(entry.date || ''),
-          time: decryptAES(entry.time || ''),
-          status: decryptAES(entry.status || '').toLowerCase(),
-          text: decryptAES(entry.text || ''),
-        }));
-
+  // 2) Load & decrypt quantum requests, then map in user info
+  useEffect(() => {
+    const quantRef = dbRef(db, 'version12/UserRequests/Quantum');
+    const unsub = onValue(
+      quantRef,
+      (snap) => {
+        const raw = snap.val() || {};
+        const parsed: QuantumRecord[] = Object.entries(raw).map(
+          ([id, entry]: [string, any]) => {
+            const plainUserId = decryptAES(entry.userId  || '', NOTES_AES_SECRET_KEY);
+            const user = userData[plainUserId] || { name: 'Unknown', college: 'Unknown' };
+            return {
+              id,
+              userId:      plainUserId,
+              userName:    user.name,
+              userCollege: user.college,
+              date:        decryptAES(entry.date   || '', NOTES_AES_SECRET_KEY),
+              time:        decryptAES(entry.time   || '', NOTES_AES_SECRET_KEY),
+              status:      decryptAES(entry.status || '', NOTES_AES_SECRET_KEY).toLowerCase(),
+              text:        decryptAES(entry.text   || '', NOTES_AES_SECRET_KEY),
+            };
+          }
+        );
         setAllData(parsed);
         setLoading(false);
       },
       (err) => {
-        console.error('Firebase fetch error:', err);
+        console.error('Fetch quantum error:', err);
         message.error('Failed to load quantum requests.');
         setLoading(false);
       }
     );
+    return () => unsub();
+  }, [userData]);
 
-    return () => unsubscribe();
-  }, []);
-
+  // 3) Apply status filter
   useEffect(() => {
-    if (statusFilter === 'all') {
-      setFilteredData(allData);
-    } else {
-      setFilteredData(allData.filter((item) => item.status === statusFilter));
-    }
+    setFilteredData(
+      statusFilter === 'all'
+        ? allData
+        : allData.filter((item) => item.status === statusFilter)
+    );
   }, [allData, statusFilter]);
 
+  // 4) Status update handler
   const handleStatusChange = async (id: string, newStatus: string) => {
-    const encryptedStatus = encryptAES(newStatus);
-    const path = `version12/UserRequests/Quantum/${id}`;
-
     try {
-      await update(dbRef(db, path), { status: encryptedStatus });
-
-      const updatedData = allData.map((item) =>
-        item.id === id ? { ...item, status: newStatus } : item
+      await update(dbRef(db, `version12/UserRequests/Quantum/${id}`), {
+        status: encryptAES(newStatus, NOTES_AES_SECRET_KEY),
+      });
+      const updated = allData.map((rec) =>
+        rec.id === id ? { ...rec, status: newStatus } : rec
       );
-
-      setAllData(updatedData);
-      setSelectedItem((prev: any) => prev ? { ...prev, status: newStatus } : prev);
+      setAllData(updated);
+      if (selectedItem?.id === id) {
+        setSelectedItem({ ...selectedItem, status: newStatus });
+      }
       setStatusChangedTo(newStatus);
       message.success(`Status updated to "${newStatus}"`);
-    } catch (error) {
-      console.error('Status update failed:', error);
+    } catch (err) {
+      console.error('Status update failed:', err);
       message.error('Failed to update status');
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'resolved':
-        return 'green';
-      case 'not resolved':
-        return 'red';
-      case 'pending':
-      default:
-        return 'gold';
+    switch (status) {
+      case 'resolved':     return 'green';
+      case 'not resolved': return 'red';
+      default:             return 'gold';
     }
   };
 
+  // 5) Table columns
   const columns = [
-    {
-      title: 'User ID',
-      dataIndex: 'userId',
-      key: 'userId',
-    },
-    {
-      title: 'Date',
-      dataIndex: 'date',
-      key: 'date',
-    },
-    {
-      title: 'Time',
-      dataIndex: 'time',
-      key: 'time',
-    },
+    { title: 'User Name', dataIndex: 'userName',    key: 'userName' },
+    { title: 'College',   dataIndex: 'userCollege', key: 'userCollege' },
+    { title: 'Date',      dataIndex: 'date',        key: 'date' },
+    { title: 'Time',      dataIndex: 'time',        key: 'time' },
     {
       title: 'Text',
       dataIndex: 'text',
       key: 'text',
-      render: (text: string) => (
+      render: (t: string) => (
         <div style={{ maxWidth: 300, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-          {text}
+          {t}
         </div>
       ),
     },
     {
       title: 'Status',
       key: 'status',
-      render: (_: any, record: any) => (
-        <Tag color={getStatusColor(record.status)}>{record.status}</Tag>
+      render: (_: any, r: QuantumRecord) => (
+        <Tag color={getStatusColor(r.status)}>{r.status}</Tag>
       ),
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: any, r: QuantumRecord) => (
         <Button
           type="primary"
           onClick={() => {
-            setSelectedItem(record);
+            setSelectedItem(r);
             setStatusChangedTo(null);
             setModalVisible(true);
           }}
@@ -174,26 +192,22 @@ const UserRequestedQuantums: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: 24 }}>
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="text-xl font-semibold">User Requested Quantums</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Select
-            value={statusFilter}
-            onChange={(val) => setStatusFilter(val)}
-            style={{ width: 200 }}
-          >
+          <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 200 }}>
             <Option value="all">All</Option>
             <Option value="pending">Pending</Option>
             <Option value="resolved">Resolved</Option>
             <Option value="not resolved">Not Resolved</Option>
           </Select>
-          <span style={{ fontWeight: 500 }}>
-            Total: {filteredData.length}
-          </span>
+          <span style={{ fontWeight: 500 }}>Total: {filteredData.length}</span>
         </div>
       </div>
 
+      {/* Table */}
       {loading ? (
         <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
       ) : (
@@ -206,15 +220,18 @@ const UserRequestedQuantums: React.FC = () => {
         />
       )}
 
+      {/* Modal */}
       <Modal
         open={modalVisible}
-        title="View Request Details"
+        title="Request Details"
         onCancel={() => setModalVisible(false)}
         footer={<Button onClick={() => setModalVisible(false)}>Close</Button>}
       >
         {selectedItem && (
-          <div>
+          <>
             <p><strong>User ID:</strong> {selectedItem.userId}</p>
+            <p><strong>User Name:</strong> {selectedItem.userName}</p>
+            <p><strong>College:</strong> {selectedItem.userCollege}</p>
             <p><strong>Date:</strong> {selectedItem.date}</p>
             <p><strong>Time:</strong> {selectedItem.time}</p>
             <p><strong>Text:</strong> {selectedItem.text}</p>
@@ -222,11 +239,9 @@ const UserRequestedQuantums: React.FC = () => {
             <div style={{ marginTop: 16 }}>
               <strong>Status:</strong>
               <Select
-                style={{ marginLeft: 10, width: 180 }}
                 value={selectedItem.status}
-                onChange={(value) => {
-                  handleStatusChange(selectedItem.id, value);
-                }}
+                style={{ marginLeft: 10, width: 180 }}
+                onChange={(val) => handleStatusChange(selectedItem.id, val)}
               >
                 <Option value="pending">Pending</Option>
                 <Option value="resolved">Resolved</Option>
@@ -240,7 +255,7 @@ const UserRequestedQuantums: React.FC = () => {
                 <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
               </p>
             )}
-          </div>
+          </>
         )}
       </Modal>
     </div>
