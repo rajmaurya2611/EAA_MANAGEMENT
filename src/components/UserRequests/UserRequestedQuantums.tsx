@@ -7,15 +7,19 @@ import CryptoJS from 'crypto-js';
 const { Option } = Select;
 
 // AES keys
-const USER_AES_SECRET_KEY  = import.meta.env.VITE_AES_SECRET_KEY as string;              // A1B2C3D4E5F6G7H8
-const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;   // YADURAJU12345678
+const USER_AES_SECRET_KEY  = import.meta.env.VITE_AES_SECRET_KEY as string;
+const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;
 
-// AES decrypt helper
+// ———————————————————————————————————————————
+// Helper: decrypt *without* trimming, but strip ALL whitespace inside ciphertext
+// ———————————————————————————————————————————
 function decryptAES(encryptedText: string, key: string): string {
   try {
-    const parsedKey = CryptoJS.enc.Utf8.parse(key);
-    const dec = CryptoJS.AES.decrypt(encryptedText.trim(), parsedKey, {
-      mode: CryptoJS.mode.ECB,
+    // remove ALL whitespace characters (spaces, newlines, tabs) from ciphertext
+    const normalized = encryptedText.replace(/\s+/g, '');
+    const parsedKey  = CryptoJS.enc.Utf8.parse(key);
+    const dec        = CryptoJS.AES.decrypt(normalized, parsedKey, {
+      mode:    CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     });
     return dec.toString(CryptoJS.enc.Utf8);
@@ -25,12 +29,12 @@ function decryptAES(encryptedText: string, key: string): string {
   }
 }
 
-// AES encrypt helper
+// AES encrypt helper (unchanged)
 function encryptAES(plainText: string, key: string): string {
   try {
     const parsedKey = CryptoJS.enc.Utf8.parse(key);
     return CryptoJS.AES.encrypt(plainText, parsedKey, {
-      mode: CryptoJS.mode.ECB,
+      mode:    CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     }).toString();
   } catch (err) {
@@ -40,35 +44,35 @@ function encryptAES(plainText: string, key: string): string {
 }
 
 interface QuantumRecord {
-  id: string;
-  userId: string;
-  userName: string;
-  userCollege: string;
-  date: string;
-  time: string;
-  status: string;
-  text: string;
+  id:           string;
+  userId:       string;
+  userName:     string;
+  userCollege:  string;
+  date:         string;
+  time:         string;
+  status:       'pending' | 'resolved' | 'not resolved';
+  text:         string;
 }
 
 const UserRequestedQuantums: React.FC = () => {
-  const [userData, setUserData] = useState<Record<string, { name: string; college: string }>>({});
-  const [allData, setAllData] = useState<QuantumRecord[]>([]);
-  const [filteredData, setFilteredData] = useState<QuantumRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<QuantumRecord | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [userData, setUserData]           = useState<Record<string, { name: string; college: string }>>({});
+  const [allData, setAllData]             = useState<QuantumRecord[]>([]);
+  const [filteredData, setFilteredData]   = useState<QuantumRecord[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [selectedItem, setSelectedItem]   = useState<QuantumRecord | null>(null);
+  const [modalVisible, setModalVisible]   = useState(false);
+  const [statusFilter, setStatusFilter]   = useState<'all'|'pending'|'resolved'|'not resolved'>('all');
   const [statusChangedTo, setStatusChangedTo] = useState<string | null>(null);
 
   // 1) Load & decrypt users
   useEffect(() => {
     const usersRef = dbRef(db, 'version12/users');
-    const unsub = onValue(usersRef, (snap) => {
+    const unsub    = onValue(usersRef, snap => {
       const raw = snap.val() || {};
       const map: typeof userData = {};
       Object.entries(raw).forEach(([uid, entry]: [string, any]) => {
         map[uid] = {
-          name: decryptAES(entry.name    || '', USER_AES_SECRET_KEY),
+          name:    decryptAES(entry.name    || '', USER_AES_SECRET_KEY),
           college: decryptAES(entry.college || '', USER_AES_SECRET_KEY),
         };
       });
@@ -77,17 +81,17 @@ const UserRequestedQuantums: React.FC = () => {
     return () => unsub();
   }, []);
 
-  // 2) Load & decrypt quantum requests, then map in user info
+  // 2) Load & decrypt quantum requests
   useEffect(() => {
     const quantRef = dbRef(db, 'version12/UserRequests/Quantum');
-    const unsub = onValue(
+    const unsub    = onValue(
       quantRef,
-      (snap) => {
+      snap => {
         const raw = snap.val() || {};
         const parsed: QuantumRecord[] = Object.entries(raw).map(
           ([id, entry]: [string, any]) => {
             const plainUserId = decryptAES(entry.userId  || '', NOTES_AES_SECRET_KEY);
-            const user = userData[plainUserId] || { name: 'Unknown', college: 'Unknown' };
+            const user        = userData[plainUserId] || { name: 'Unknown', college: 'Unknown' };
             return {
               id,
               userId:      plainUserId,
@@ -95,7 +99,7 @@ const UserRequestedQuantums: React.FC = () => {
               userCollege: user.college,
               date:        decryptAES(entry.date   || '', NOTES_AES_SECRET_KEY),
               time:        decryptAES(entry.time   || '', NOTES_AES_SECRET_KEY),
-              status:      decryptAES(entry.status || '', NOTES_AES_SECRET_KEY).toLowerCase(),
+              status:      decryptAES(entry.status || '', NOTES_AES_SECRET_KEY).toLowerCase() as QuantumRecord['status'],
               text:        decryptAES(entry.text   || '', NOTES_AES_SECRET_KEY),
             };
           }
@@ -103,7 +107,7 @@ const UserRequestedQuantums: React.FC = () => {
         setAllData(parsed);
         setLoading(false);
       },
-      (err) => {
+      err => {
         console.error('Fetch quantum error:', err);
         message.error('Failed to load quantum requests.');
         setLoading(false);
@@ -117,7 +121,7 @@ const UserRequestedQuantums: React.FC = () => {
     setFilteredData(
       statusFilter === 'all'
         ? allData
-        : allData.filter((item) => item.status === statusFilter)
+        : allData.filter(item => item.status === statusFilter)
     );
   }, [allData, statusFilter]);
 
@@ -127,12 +131,12 @@ const UserRequestedQuantums: React.FC = () => {
       await update(dbRef(db, `version12/UserRequests/Quantum/${id}`), {
         status: encryptAES(newStatus, NOTES_AES_SECRET_KEY),
       });
-      const updated = allData.map((rec) =>
-        rec.id === id ? { ...rec, status: newStatus } : rec
+      const updated = allData.map(rec =>
+        rec.id === id ? { ...rec, status: newStatus as QuantumRecord['status'] } : rec
       );
       setAllData(updated);
       if (selectedItem?.id === id) {
-        setSelectedItem({ ...selectedItem, status: newStatus });
+        setSelectedItem({ ...selectedItem, status: newStatus as QuantumRecord['status'] });
       }
       setStatusChangedTo(newStatus);
       message.success(`Status updated to "${newStatus}"`);
@@ -161,6 +165,7 @@ const UserRequestedQuantums: React.FC = () => {
       dataIndex: 'text',
       key: 'text',
       render: (t: string) => (
+        // manage large inputs with wrapping and a max width
         <div style={{ maxWidth: 300, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
           {t}
         </div>
@@ -197,7 +202,11 @@ const UserRequestedQuantums: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="text-xl font-semibold">User Requested Quantums</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 200 }}>
+          <Select<'all'|'pending'|'resolved'|'not resolved'>
+            value={statusFilter}
+            onChange={val => setStatusFilter(val)}
+            style={{ width: 200 }}
+          >
             <Option value="all">All</Option>
             <Option value="pending">Pending</Option>
             <Option value="resolved">Resolved</Option>
@@ -234,14 +243,17 @@ const UserRequestedQuantums: React.FC = () => {
             <p><strong>College:</strong> {selectedItem.userCollege}</p>
             <p><strong>Date:</strong> {selectedItem.date}</p>
             <p><strong>Time:</strong> {selectedItem.time}</p>
-            <p><strong>Text:</strong> {selectedItem.text}</p>
+            <p><strong>Text:</strong></p>
+            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', marginBottom: 16 }}>
+              {selectedItem.text}
+            </div>
 
             <div style={{ marginTop: 16 }}>
               <strong>Status:</strong>
               <Select
                 value={selectedItem.status}
                 style={{ marginLeft: 10, width: 180 }}
-                onChange={(val) => handleStatusChange(selectedItem.id, val)}
+                onChange={val => handleStatusChange(selectedItem.id, val)}
               >
                 <Option value="pending">Pending</Option>
                 <Option value="resolved">Resolved</Option>
