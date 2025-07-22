@@ -95,6 +95,21 @@ const NewEvent: React.FC = () => {
       return;
     }
 
+    // get current IST date-time and encrypt it
+    const istRaw = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+      .format(new Date())
+      .replace(',', '');
+    const createdAt = encryptAES(istRaw);
+
     const eventRef = push(dbRef(db, 'version12/Events'));
     const eventDate = vals.date.format('DD-MM-YYYY');
 
@@ -109,6 +124,8 @@ const NewEvent: React.FC = () => {
       applyLink: encryptAES(vals.applyLink),
       // encrypt each download URL
       bannerUrls: banners.map(b => encryptAES(b.url)),
+      // record creation timestamp in IST
+      createdAt,
     };
 
     try {
@@ -122,10 +139,16 @@ const NewEvent: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: 24, background: '#fff' }}>
+    <div
+      style={{
+        maxWidth: 600,
+        margin: '0 auto',
+        padding: 24,
+        background: '#fff',
+      }}
+    >
       <h2>Create New Event</h2>
       <Form form={form} layout="vertical" onFinish={onFinish}>
-        {/* ... other Form.Items for title, description, etc. ... */}
         <Form.Item
           label="Title"
           name="title"

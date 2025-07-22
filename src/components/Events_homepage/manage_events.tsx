@@ -199,10 +199,15 @@ const ManageEvents: React.FC = () => {
     setEditVisible(true);
   };
 
-  // Save edits
+  // Save edits (and update createdAt in IST)
   const handleEditSave = async () => {
     if (!editing) return;
     const vals = await editForm.validateFields();
+
+    // get current IST timestamp and encrypt
+    const nowIst = moment().utcOffset('+05:30').format('YYYY-MM-DD HH:mm:ss');
+    const encryptedCreatedAt = encryptAES(nowIst);
+
     const data = {
       title: encryptAES(vals.title),
       description: encryptAES(vals.description),
@@ -212,7 +217,9 @@ const ManageEvents: React.FC = () => {
       type: encryptAES(vals.type),
       applyLink: encryptAES(vals.applyLink),
       bannerUrls: editBanners.map(b => encryptAES(b.url)),
+      createdAt: encryptedCreatedAt,
     };
+
     try {
       await update(dbRef(db, `version12/Events/${editing.id}`), data);
       message.success('Event updated');
