@@ -10,6 +10,7 @@ import {
   message,
 } from 'antd';
 import { UploadOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import moment from 'moment';
 import CryptoJS from 'crypto-js';
 import { storage, db } from '../../firebaseConfig';
 import {
@@ -95,20 +96,11 @@ const NewEvent: React.FC = () => {
       return;
     }
 
-    // get current IST date-time and encrypt it
-    const istRaw = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
-      .format(new Date())
-      .replace(',', '');
-    const createdAt = encryptAES(istRaw);
+    // generate IST timestamp in same format as ManageEvents expects
+    const nowIst = moment()
+      .utcOffset('+05:30')
+      .format('YYYY-MM-DD HH:mm:ss');
+    const createdAt = encryptAES(nowIst);
 
     const eventRef = push(dbRef(db, 'version12/Events'));
     const eventDate = vals.date.format('DD-MM-YYYY');

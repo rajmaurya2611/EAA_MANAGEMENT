@@ -50,6 +50,7 @@ interface EventData {
   type: string;
   applyLink: string;
   banners: Banner[];
+  createdAt: string;   // 'YYYY-MM-DD HH:mm:ss' in IST
 }
 
 const decryptAES = (cipher: string): string => {
@@ -80,10 +81,10 @@ const ManageEvents: React.FC = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filter state
-  const [filterLocation, setFilterLocation]   = useState<string>('');
-  const [filterType, setFilterType]           = useState<string>('');
-  const [filterOrganizer, setFilterOrganizer] = useState<string>('');
+  // Filters
+  const [filterLocation, setFilterLocation]   = useState('');
+  const [filterType, setFilterType]           = useState('');
+  const [filterOrganizer, setFilterOrganizer] = useState('');
   const [filterDate, setFilterDate]           = useState<Moment | null>(null);
 
   // Preview modal
@@ -91,17 +92,21 @@ const ManageEvents: React.FC = () => {
   const [previewUrls, setPreviewUrls]       = useState<string[]>([]);
   const [previewIndex, setPreviewIndex]     = useState(0);
 
-  // Edit modal
-  const [editVisible, setEditVisible]       = useState(false);
-  const [editForm]                          = Form.useForm();
-  const [editing, setEditing]               = useState<EventData | null>(null);
-  const [editBanners, setEditBanners]       = useState<Banner[]>([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadingIndex, setUploadingIndex] = useState(0);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploading, setUploading]           = useState(false);
+  // Description modal
+  const [descModalVisible, setDescModalVisible] = useState(false);
+  const [descModalContent, setDescModalContent] = useState('');
 
-  // Load events
+  // Edit modal
+  const [editVisible, setEditVisible]         = useState(false);
+  const [editForm]                            = Form.useForm();
+  const [editing, setEditing]                 = useState<EventData | null>(null);
+  const [editBanners, setEditBanners]         = useState<Banner[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadingIndex, setUploadingIndex]   = useState(0);
+  const [uploadProgress, setUploadProgress]   = useState(0);
+  const [uploading, setUploading]             = useState(false);
+
+  // Load & decrypt events
   useEffect(() => {
     const refEvents = dbRef(db, 'version12/Events');
     const unsub = onValue(refEvents, snap => {
@@ -112,8 +117,7 @@ const ManageEvents: React.FC = () => {
           const start = url.indexOf('/o/') + 3;
           const end = url.indexOf('?');
           const path = decodeURIComponent(url.substring(start, end));
-          const ref = storageRef(storage, path);
-          return { url, ref };
+          return { url, ref: storageRef(storage, path) };
         });
         return {
           id,
@@ -125,8 +129,16 @@ const ManageEvents: React.FC = () => {
           type: decryptAES(raw.type),
           applyLink: decryptAES(raw.applyLink),
           banners,
+          createdAt: decryptAES(raw.createdAt || '')
         };
       });
+
+      // Sort by createdAt descending (newest first)
+      list.sort((a, b) =>
+        moment(b.createdAt, 'YYYY-MM-DD HH:mm:ss').valueOf() -
+        moment(a.createdAt, 'YYYY-MM-DD HH:mm:ss').valueOf()
+      );
+
       setEvents(list);
       setLoading(false);
     });
@@ -136,9 +148,7 @@ const ManageEvents: React.FC = () => {
   // Delete event + its images
   const handleDelete = async (ev: EventData) => {
     setLoading(true);
-    try {
-      await Promise.all(ev.banners.map(b => deleteObject(b.ref)));
-    } catch {}
+    try { await Promise.all(ev.banners.map(b => deleteObject(b.ref))); } catch {}
     await remove(dbRef(db, `version12/Events/${ev.id}`));
     message.success('Event deleted');
     setLoading(false);
@@ -151,39 +161,39 @@ const ManageEvents: React.FC = () => {
     setPreviewVisible(true);
   };
 
-  // Start uploading new banner in edit
+  // Description modal
+  const showDescModal = (full: string) => {
+    setDescModalContent(full);
+    setDescModalVisible(true);
+  };
+
+  // Upload in edit
   const startImageUpload = (idx: number, file: File) => {
     setUploading(true);
     const path = `events/${file.name}_${Date.now()}`;
     const ref = storageRef(storage, path);
     const task = uploadBytesResumable(ref, file);
-
     task.on(
       'state_changed',
       snap => setUploadProgress((snap.bytesTransferred / snap.totalBytes) * 100),
-      () => {
-        message.error('Upload failed');
-        setUploading(false);
-      },
+      () => { message.error('Upload failed'); setUploading(false); },
       async () => {
         const url = await getDownloadURL(ref);
         setEditBanners(prev => [...prev, { url, ref }]);
-        message.success(`Image #${idx + 1} uploaded`);
+        message.success(`Image #${idx+1} uploaded`);
         setUploading(false);
         setShowUploadModal(false);
       }
     );
     return false;
   };
-
-  // Remove a banner in edit
   const removeEditBanner = async (i: number) => {
     const b = editBanners[i];
     try { await deleteObject(b.ref); } catch {}
     setEditBanners(prev => prev.filter((_, idx) => idx !== i));
   };
 
-  // Open edit modal
+  // Open edit, pre-fill including createdAt
   const openEdit = (ev: EventData) => {
     setEditing(ev);
     editForm.setFieldsValue({
@@ -194,20 +204,18 @@ const ManageEvents: React.FC = () => {
       date: moment(ev.date, 'DD-MM-YYYY'),
       type: ev.type,
       applyLink: ev.applyLink,
+      createdAt: ev.createdAt,  // show here
     });
     setEditBanners(ev.banners);
     setEditVisible(true);
   };
 
-  // Save edits (and update createdAt in IST)
+  // Save edits (update createdAt)
   const handleEditSave = async () => {
     if (!editing) return;
     const vals = await editForm.validateFields();
-
-    // get current IST timestamp and encrypt
     const nowIst = moment().utcOffset('+05:30').format('YYYY-MM-DD HH:mm:ss');
     const encryptedCreatedAt = encryptAES(nowIst);
-
     const data = {
       title: encryptAES(vals.title),
       description: encryptAES(vals.description),
@@ -219,7 +227,6 @@ const ManageEvents: React.FC = () => {
       bannerUrls: editBanners.map(b => encryptAES(b.url)),
       createdAt: encryptedCreatedAt,
     };
-
     try {
       await update(dbRef(db, `version12/Events/${editing.id}`), data);
       message.success('Event updated');
@@ -239,12 +246,40 @@ const ManageEvents: React.FC = () => {
   });
 
   const columns = [
-    { title: 'Title',       dataIndex: 'title',       key: 'title' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
-    { title: 'Organizer',   dataIndex: 'organizer',   key: 'organizer' },
-    { title: 'Location',    dataIndex: 'location',    key: 'location' },
-    { title: 'Date',        dataIndex: 'date',        key: 'date' },
-    { title: 'Type',        dataIndex: 'type',        key: 'type' },
+    { title: 'Title', dataIndex: 'title', key: 'title' },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (text: string) => {
+        const words = text.split(/\s+/);
+        const isLong = words.length > 20;
+        const display = isLong
+          ? words.slice(0,20).join(' ') + '...'
+          : text;
+        return (
+          <>
+            {display}
+            {isLong && (
+              <a style={{ marginLeft: 8, color:'blue'}} onClick={() => showDescModal(text)}>
+                Read more
+              </a>
+            )}
+          </>
+        );
+      },
+    },
+    { title: 'Organizer', dataIndex: 'organizer', key: 'organizer' },
+    { title: 'Location',  dataIndex: 'location',  key: 'location' },
+    { title: 'Date',      dataIndex: 'date',      key: 'date' },
+    {
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (ts: string) =>
+        moment(ts, 'YYYY-MM-DD HH:mm:ss').format('DD-MM-YYYY HH:mm:ss'),
+    },
+    { title: 'Type', dataIndex: 'type', key: 'type' },
     {
       title: 'Apply Link',
       dataIndex: 'applyLink',
@@ -261,10 +296,8 @@ const ManageEvents: React.FC = () => {
       render: (_: any, ev: EventData) => (
         <Space>
           <Button icon={<EyeOutlined />} onClick={() => showPreview(ev.banners)}>
-            Preview
           </Button>
           <Button icon={<EditOutlined />} onClick={() => openEdit(ev)}>
-            Edit
           </Button>
           <Popconfirm
             title="Delete this event?"
@@ -289,21 +322,19 @@ const ManageEvents: React.FC = () => {
           placeholder="Filter by Location"
           value={filterLocation}
           onChange={e => setFilterLocation(e.target.value)}
-          style={{ width: 160 }}
-          allowClear
+          style={{ width: 160 }} allowClear
         />
         <Input
           placeholder="Filter by Type"
           value={filterType}
           onChange={e => setFilterType(e.target.value)}
-          style={{ width: 160 }}
-          allowClear
+          style={{ width: 160 }} allowClear
         />
         <DatePicker
           placeholder="Filter by Date"
           format="DD-MM-YYYY"
           value={filterDate}
-          onChange={date => setFilterDate(date)}
+          onChange={setFilterDate}
           allowClear
           style={{ width: 160 }}
         />
@@ -311,8 +342,7 @@ const ManageEvents: React.FC = () => {
           placeholder="Filter by Organizer"
           value={filterOrganizer}
           onChange={e => setFilterOrganizer(e.target.value)}
-          style={{ width: 160 }}
-          allowClear
+          style={{ width: 160 }} allowClear
         />
       </Space>
 
@@ -321,6 +351,12 @@ const ManageEvents: React.FC = () => {
         columns={columns}
         dataSource={filtered}
         loading={loading}
+        // grey‑out past events
+        onRow={record => ({
+          style: moment(record.date, 'DD-MM-YYYY').isBefore(moment(), 'day')
+            ? { backgroundColor: '#f0f0f0' }
+            : {},
+        })}
       />
 
       {/* Preview Modal */}
@@ -340,18 +376,28 @@ const ManageEvents: React.FC = () => {
               <Button
                 icon={<LeftOutlined />}
                 onClick={() =>
-                  setPreviewIndex(i => (i === 0 ? previewUrls.length - 1 : i - 1))
+                  setPreviewIndex(i => (i === 0 ? previewUrls.length-1 : i-1))
                 }
               />
               <Button
                 icon={<RightOutlined />}
                 onClick={() =>
-                  setPreviewIndex(i => (i + 1) % previewUrls.length)
+                  setPreviewIndex(i => (i+1) % previewUrls.length)
                 }
               />
             </Space>
           )}
         </div>
+      </Modal>
+
+      {/* Description Modal */}
+      <Modal
+        title="Description"
+        open={descModalVisible}
+        footer={null}
+        onCancel={() => setDescModalVisible(false)}
+      >
+        <p>{descModalContent}</p>
       </Modal>
 
       {/* Edit Modal */}
@@ -367,11 +413,7 @@ const ManageEvents: React.FC = () => {
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[{ required: true }]}
-          >
+          <Form.Item name="description" label="Description" rules={[{ required: true }]}>
             <TextArea rows={3} />
           </Form.Item>
 
@@ -387,15 +429,15 @@ const ManageEvents: React.FC = () => {
             <DatePicker format="DD-MM-YYYY" style={{ width: '100%' }} />
           </Form.Item>
 
+          <Form.Item name="createdAt" label="Created At">
+            <Input disabled />
+          </Form.Item>
+
           <Form.Item name="type" label="Type" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="applyLink"
-            label="Apply Link"
-            rules={[{ required: true }]}
-          >
+          <Form.Item name="applyLink" label="Apply Link" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
