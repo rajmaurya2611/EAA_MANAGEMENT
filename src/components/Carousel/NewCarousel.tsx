@@ -3,6 +3,7 @@ import { Layout, Menu } from 'antd';
 import Template1 from './Template1';
 import Template2 from './Template2';
 import Template3 from './Template3';
+import Template4 from './Template4';
 
 const { Sider, Content } = Layout;
 
@@ -29,6 +30,7 @@ function NewCarousel() {
             <Menu.Item key="template1">Template 1</Menu.Item>
             <Menu.Item key="template2">Template 2</Menu.Item>
             <Menu.Item key="template3">Template 3</Menu.Item>
+            <Menu.Item key="template4">Template 4</Menu.Item>
           </Menu>
         </Sider>
 
@@ -53,6 +55,11 @@ function NewCarousel() {
             {selectedTemplate === 'template3' && (
              <Template3/>
             )}
+
+            {selectedTemplate === 'template4' && (
+             <Template4/>
+            )}
+            
           </Content>
         </Layout>
       </Layout>
