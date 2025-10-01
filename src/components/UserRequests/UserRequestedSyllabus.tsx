@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Spin, message, Tag, Select, Modal, Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update } from 'firebase/database';
 import CryptoJS from 'crypto-js';
@@ -7,17 +8,14 @@ import CryptoJS from 'crypto-js';
 const { Option } = Select;
 
 // AES keys
-const USER_AES_SECRET_KEY  = import.meta.env.VITE_AES_SECRET_KEY as string;            
+const USER_AES_SECRET_KEY  = import.meta.env.VITE_AES_SECRET_KEY as string;
 const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;
 
-// ———————————————————————————————————————————
-// Helper: decrypt *without* trimming, but strip ALL whitespace inside ciphertext
-// ———————————————————————————————————————————
+// AES decrypt helper
 function decryptAES(ciphertext: string, key: string): string {
   try {
-    const normalized = ciphertext.replace(/\s+/g, '');
     const parsedKey = CryptoJS.enc.Utf8.parse(key);
-    const dec = CryptoJS.AES.decrypt(normalized, parsedKey, {
+    const dec = CryptoJS.AES.decrypt((ciphertext || '').trim(), parsedKey, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     });
@@ -28,6 +26,7 @@ function decryptAES(ciphertext: string, key: string): string {
   }
 }
 
+// AES encrypt helper
 function encryptAES(plain: string, key: string): string {
   try {
     const parsedKey = CryptoJS.enc.Utf8.parse(key);
@@ -46,10 +45,26 @@ interface SyllabusRecord {
   userId: string;
   userName: string;
   userCollege: string;
-  date: string;
-  time: string;
-  status: string;
+  date: string;   // "DD-MM-YYYY" or "DD/MM/YYYY"
+  time: string;   // "HH:mm:ss"
+  status: string; // 'pending' | 'resolved' | 'not resolved'
   text: string;
+}
+
+// date+time → epoch ms for stable ordering (local time)
+function dtToMs(dateStr: string, timeStr: string): number {
+  if (!dateStr) return 0;
+  const [dRaw, mRaw, yRaw] = dateStr.split(/[-/]/);
+  const d = parseInt(dRaw ?? '0', 10);
+  const m = parseInt(mRaw ?? '0', 10);
+  const y = parseInt(yRaw ?? '0', 10);
+  const [hhRaw = '0', mmRaw = '0', ssRaw = '0'] = (timeStr || '').split(':');
+  const hh = parseInt(hhRaw, 10) || 0;
+  const mm = parseInt(mmRaw, 10) || 0;
+  const ss = parseInt(ssRaw, 10) || 0;
+  if (!y || !m || !d) return 0;
+  const t = new Date(y, m - 1, d, hh, mm, ss).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 const UserRequestedSyllabus: React.FC = () => {
@@ -110,13 +125,17 @@ const UserRequestedSyllabus: React.FC = () => {
     return () => unsub();
   }, [userData]);
 
-  // 3) Filter by status
+  // 3) Filter by status AND enforce newest-first ordering
   useEffect(() => {
-    setFilteredData(
+    const base =
       statusFilter === 'all'
         ? allData
-        : allData.filter(r => r.status === statusFilter)
+        : allData.filter(r => r.status === statusFilter);
+
+    const sorted = [...base].sort(
+      (a, b) => dtToMs(b.date, b.time) - dtToMs(a.date, a.time)
     );
+    setFilteredData(sorted);
   }, [allData, statusFilter]);
 
   // 4) Handle status updates
@@ -135,13 +154,11 @@ const UserRequestedSyllabus: React.FC = () => {
     }
   };
 
-  const getStatusColor = (s: string) => ({
-    resolved:     'green',
-    'not resolved':'red',
-  }[s] || 'gold');
+  const getStatusColor = (s: string) =>
+    s === 'resolved' ? 'green' : s === 'not resolved' ? 'red' : 'gold';
 
-  // 5) Table columns
-  const columns = [
+  // 5) Table columns — no sorters; order is controlled by filteredData
+  const columns: ColumnsType<SyllabusRecord> = [
     { title:'User Name',   dataIndex:'userName',    key:'userName'   },
     { title:'College',     dataIndex:'userCollege', key:'userCollege'},
     { title:'Date',        dataIndex:'date',        key:'date'       },
@@ -159,14 +176,14 @@ const UserRequestedSyllabus: React.FC = () => {
     {
       title:'Status',
       key:'status',
-      render: (_:any, r:SyllabusRecord) => (
+      render: (_:unknown, r) => (
         <Tag color={getStatusColor(r.status)}>{r.status}</Tag>
       )
     },
     {
       title:'Action',
       key:'action',
-      render: (_:any, r:SyllabusRecord) => (
+      render: (_:unknown, r) => (
         <Button
           type="primary"
           onClick={()=>{ setSelectedItem(r); setStatusChangedTo(null); setModalVisible(true); }}
@@ -182,7 +199,7 @@ const UserRequestedSyllabus: React.FC = () => {
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
         <h2 className="text-xl font-semibold">User Requested Syllabus</h2>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <Select value={statusFilter} onChange={setStatusFilter} style={{ width:200 }}>
+          <Select value={statusFilter} onChange={(v: SyllabusRecord['status'] | 'all') => setStatusFilter(v as any)} style={{ width:200 }}>
             <Option value="all">All</Option>
             <Option value="pending">Pending</Option>
             <Option value="resolved">Resolved</Option>
@@ -195,7 +212,7 @@ const UserRequestedSyllabus: React.FC = () => {
       {loading ? (
         <Spin size="large" style={{ display:'block', margin:'100px auto' }} />
       ) : (
-        <Table
+        <Table<SyllabusRecord>
           dataSource={filteredData}
           columns={columns}
           rowKey="id"

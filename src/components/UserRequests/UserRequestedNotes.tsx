@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Spin, message, Tag, Select, Modal, Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update } from 'firebase/database';
 import CryptoJS from 'crypto-js';
@@ -39,10 +40,26 @@ interface NoteRecord {
   userId: string;
   userName: string;
   userCollege: string;
-  date: string;
-  time: string;
-  status: string;
+  date: string;   // "DD-MM-YYYY" or "DD/MM/YYYY"
+  time: string;   // "HH:mm:ss"
+  status: string; // 'pending' | 'resolved' | 'not resolved'
   text: string;
+}
+
+/** date+time → epoch ms for ordering (local time ok). */
+function dtToMs(dateStr: string, timeStr: string): number {
+  if (!dateStr) return 0;
+  const [dRaw, mRaw, yRaw] = dateStr.split(/[-/]/);
+  const d = parseInt(dRaw ?? '0', 10);
+  const m = parseInt(mRaw ?? '0', 10);
+  const y = parseInt(yRaw ?? '0', 10);
+  const [hhRaw = '0', mmRaw = '0', ssRaw = '0'] = (timeStr || '').split(':');
+  const hh = parseInt(hhRaw, 10) || 0;
+  const mm = parseInt(mmRaw, 10) || 0;
+  const ss = parseInt(ssRaw, 10) || 0;
+  if (!y || !m || !d) return 0;
+  const t = new Date(y, m - 1, d, hh, mm, ss).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 const UserRequestedNotes: React.FC = () => {
@@ -60,7 +77,7 @@ const UserRequestedNotes: React.FC = () => {
     const usersRef = dbRef(db, 'version12/users');
     const unsub = onValue(usersRef, (snap) => {
       const raw = snap.val() || {};
-      const map: typeof userData = {};
+      const map: Record<string, { name: string; college: string }> = {};
       Object.entries(raw).forEach(([uid, entry]: [string, any]) => {
         map[uid] = {
           name: decryptAES(entry.name || '', USER_AES_SECRET_KEY),
@@ -107,13 +124,17 @@ const UserRequestedNotes: React.FC = () => {
     return () => unsub();
   }, [userData]);
 
-  // 3) Filter by status
+  // 3) Filter by status AND enforce newest-first ordering
   useEffect(() => {
-    setFilteredData(
+    const base =
       statusFilter === 'all'
         ? allData
-        : allData.filter((item) => item.status === statusFilter)
+        : allData.filter((item) => item.status === statusFilter);
+
+    const sorted = [...base].sort(
+      (a, b) => dtToMs(b.date, b.time) - dtToMs(a.date, a.time)
     );
+    setFilteredData(sorted);
   }, [allData, statusFilter]);
 
   // 4) Update status handler
@@ -139,18 +160,21 @@ const UserRequestedNotes: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'resolved': return 'green';
-      case 'not resolved': return 'red';
-      default: return 'gold';
+      case 'resolved':
+        return 'green';
+      case 'not resolved':
+        return 'red';
+      default:
+        return 'gold';
     }
   };
 
-  // 5) Columns with separate College column
-  const columns = [
+  // 5) Columns — no sorter on Date/Time
+  const columns: ColumnsType<NoteRecord> = [
     { title: 'User Name', dataIndex: 'userName', key: 'userName' },
-    { title: 'College',   dataIndex: 'userCollege', key: 'userCollege' },
-    { title: 'Date',      dataIndex: 'date', key: 'date' },
-    { title: 'Time',      dataIndex: 'time', key: 'time' },
+    { title: 'College', dataIndex: 'userCollege', key: 'userCollege' },
+    { title: 'Date', dataIndex: 'date', key: 'date' }, // sorter removed
+    { title: 'Time', dataIndex: 'time', key: 'time' }, // sorter removed
     {
       title: 'Text',
       dataIndex: 'text',
@@ -164,14 +188,12 @@ const UserRequestedNotes: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      render: (_: any, r: NoteRecord) => (
-        <Tag color={getStatusColor(r.status)}>{r.status}</Tag>
-      ),
+      render: (_: unknown, r) => <Tag color={getStatusColor(r.status)}>{r.status}</Tag>,
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, r: NoteRecord) => (
+      render: (_: unknown, r) => (
         <Button
           type="primary"
           onClick={() => {
@@ -192,7 +214,7 @@ const UserRequestedNotes: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="text-xl font-semibold">User Requested Notes</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 150 }}>
+          <Select value={statusFilter} onChange={(v: string) => setStatusFilter(v)} style={{ width: 150 }}>
             <Option value="all">All</Option>
             <Option value="pending">Pending</Option>
             <Option value="resolved">Resolved</Option>
@@ -206,7 +228,7 @@ const UserRequestedNotes: React.FC = () => {
       {loading ? (
         <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
       ) : (
-        <Table
+        <Table<NoteRecord>
           dataSource={filteredData}
           columns={columns}
           rowKey="id"
@@ -236,7 +258,7 @@ const UserRequestedNotes: React.FC = () => {
               <Select
                 value={selectedItem.status}
                 style={{ marginLeft: 10, width: 180 }}
-                onChange={(val) => handleStatusChange(selectedItem.id, val)}
+                onChange={(val: string) => handleStatusChange(selectedItem.id, val)}
               >
                 <Option value="pending">Pending</Option>
                 <Option value="resolved">Resolved</Option>
@@ -246,8 +268,7 @@ const UserRequestedNotes: React.FC = () => {
 
             {statusChangedTo && (
               <p style={{ marginTop: 12 }}>
-                ✅ Status changed to{' '}
-                <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
+                ✅ Status changed to <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
               </p>
             )}
           </>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Spin, message, Tag, Select, Modal, Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update } from 'firebase/database';
 import CryptoJS from 'crypto-js';
@@ -10,13 +11,10 @@ const { Option } = Select;
 const USER_AES_SECRET_KEY  = import.meta.env.VITE_AES_SECRET_KEY as string;
 const NOTES_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;
 
-// ———————————————————————————————————————————
-// Helper: decrypt *without* trimming, but strip ALL whitespace inside ciphertext
-// ———————————————————————————————————————————
+// Decrypt helper: strip ALL whitespace in ciphertext (avoids broken Base64)
 function decryptAES(encryptedText: string, key: string): string {
   try {
-    // remove ALL whitespace characters (spaces, newlines, tabs) from ciphertext
-    const normalized = encryptedText.replace(/\s+/g, '');
+    const normalized = (encryptedText || '').replace(/\s+/g, '');
     const parsedKey  = CryptoJS.enc.Utf8.parse(key);
     const dec        = CryptoJS.AES.decrypt(normalized, parsedKey, {
       mode:    CryptoJS.mode.ECB,
@@ -29,7 +27,7 @@ function decryptAES(encryptedText: string, key: string): string {
   }
 }
 
-// AES encrypt helper (unchanged)
+// AES encrypt helper
 function encryptAES(plainText: string, key: string): string {
   try {
     const parsedKey = CryptoJS.enc.Utf8.parse(key);
@@ -48,10 +46,26 @@ interface QuantumRecord {
   userId:       string;
   userName:     string;
   userCollege:  string;
-  date:         string;
-  time:         string;
+  date:         string; // "DD-MM-YYYY" or "DD/MM/YYYY"
+  time:         string; // "HH:mm:ss"
   status:       'pending' | 'resolved' | 'not resolved';
   text:         string;
+}
+
+/** date+time → epoch ms (local). Tolerates missing parts. */
+function dtToMs(dateStr: string, timeStr: string): number {
+  if (!dateStr) return 0;
+  const [dRaw, mRaw, yRaw] = dateStr.split(/[-/]/);
+  const d = parseInt(dRaw ?? '0', 10);
+  const m = parseInt(mRaw ?? '0', 10);
+  const y = parseInt(yRaw ?? '0', 10);
+  const [hhRaw = '0', mmRaw = '0', ssRaw = '0'] = (timeStr || '').split(':');
+  const hh = parseInt(hhRaw, 10) || 0;
+  const mm = parseInt(mmRaw, 10) || 0;
+  const ss = parseInt(ssRaw, 10) || 0;
+  if (!y || !m || !d) return 0;
+  const t = new Date(y, m - 1, d, hh, mm, ss).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 const UserRequestedQuantums: React.FC = () => {
@@ -69,7 +83,7 @@ const UserRequestedQuantums: React.FC = () => {
     const usersRef = dbRef(db, 'version12/users');
     const unsub    = onValue(usersRef, snap => {
       const raw = snap.val() || {};
-      const map: typeof userData = {};
+      const map: Record<string, {name: string; college: string}> = {};
       Object.entries(raw).forEach(([uid, entry]: [string, any]) => {
         map[uid] = {
           name:    decryptAES(entry.name    || '', USER_AES_SECRET_KEY),
@@ -116,13 +130,17 @@ const UserRequestedQuantums: React.FC = () => {
     return () => unsub();
   }, [userData]);
 
-  // 3) Apply status filter
+  // 3) Apply status filter AND enforce newest-first ordering
   useEffect(() => {
-    setFilteredData(
+    const base =
       statusFilter === 'all'
         ? allData
-        : allData.filter(item => item.status === statusFilter)
+        : allData.filter(item => item.status === statusFilter);
+
+    const sorted = [...base].sort(
+      (a, b) => dtToMs(b.date, b.time) - dtToMs(a.date, a.time)
     );
+    setFilteredData(sorted);
   }, [allData, statusFilter]);
 
   // 4) Status update handler
@@ -146,16 +164,11 @@ const UserRequestedQuantums: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'resolved':     return 'green';
-      case 'not resolved': return 'red';
-      default:             return 'gold';
-    }
-  };
+  const getStatusColor = (status: string) =>
+    status === 'resolved' ? 'green' : status === 'not resolved' ? 'red' : 'gold';
 
-  // 5) Table columns
-  const columns = [
+  // 5) Table columns — no sorters; order is controlled by filteredData
+  const columns: ColumnsType<QuantumRecord> = [
     { title: 'User Name', dataIndex: 'userName',    key: 'userName' },
     { title: 'College',   dataIndex: 'userCollege', key: 'userCollege' },
     { title: 'Date',      dataIndex: 'date',        key: 'date' },
@@ -165,7 +178,6 @@ const UserRequestedQuantums: React.FC = () => {
       dataIndex: 'text',
       key: 'text',
       render: (t: string) => (
-        // manage large inputs with wrapping and a max width
         <div style={{ maxWidth: 300, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
           {t}
         </div>
@@ -174,14 +186,12 @@ const UserRequestedQuantums: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      render: (_: any, r: QuantumRecord) => (
-        <Tag color={getStatusColor(r.status)}>{r.status}</Tag>
-      ),
+      render: (_: unknown, r) => <Tag color={getStatusColor(r.status)}>{r.status}</Tag>,
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, r: QuantumRecord) => (
+      render: (_: unknown, r) => (
         <Button
           type="primary"
           onClick={() => {
@@ -204,7 +214,7 @@ const UserRequestedQuantums: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Select<'all'|'pending'|'resolved'|'not resolved'>
             value={statusFilter}
-            onChange={val => setStatusFilter(val)}
+            onChange={(val) => setStatusFilter(val)}
             style={{ width: 200 }}
           >
             <Option value="all">All</Option>
@@ -220,7 +230,7 @@ const UserRequestedQuantums: React.FC = () => {
       {loading ? (
         <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
       ) : (
-        <Table
+        <Table<QuantumRecord>
           dataSource={filteredData}
           columns={columns}
           rowKey="id"
@@ -253,7 +263,7 @@ const UserRequestedQuantums: React.FC = () => {
               <Select
                 value={selectedItem.status}
                 style={{ marginLeft: 10, width: 180 }}
-                onChange={val => handleStatusChange(selectedItem.id, val)}
+                onChange={(val) => handleStatusChange(selectedItem.id, val)}
               >
                 <Option value="pending">Pending</Option>
                 <Option value="resolved">Resolved</Option>
@@ -263,8 +273,7 @@ const UserRequestedQuantums: React.FC = () => {
 
             {statusChangedTo && (
               <p style={{ marginTop: 12 }}>
-                ✅ Status changed to{' '}
-                <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
+                ✅ Status changed to <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
               </p>
             )}
           </>

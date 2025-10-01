@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Spin, message, Tag, Select, Modal, Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update } from 'firebase/database';
 import CryptoJS from 'crypto-js';
@@ -8,13 +9,13 @@ const { Option } = Select;
 
 // AES keys
 const USER_AES_SECRET_KEY   = import.meta.env.VITE_AES_SECRET_KEY as string;              // A1B2C3D4E5F6G7H8
-const NOTES_AES_SECRET_KEY  = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;  // YADURAJU12345678
+const NOTES_AES_SECRET_KEY  = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as string;   // YADURAJU12345678
 
 // AES decrypt helper
 function decryptAES(encryptedText: string, key: string): string {
   try {
     const parsedKey = CryptoJS.enc.Utf8.parse(key);
-    const dec = CryptoJS.AES.decrypt(encryptedText.trim(), parsedKey, {
+    const dec = CryptoJS.AES.decrypt((encryptedText || '').trim(), parsedKey, {
       mode: CryptoJS.mode.ECB,
       padding: CryptoJS.pad.Pkcs7,
     });
@@ -44,10 +45,26 @@ interface RoadmapRecord {
   userId: string;
   userName: string;
   userCollege: string;
-  date: string;
-  time: string;
-  status: string;
+  date: string;   // "DD-MM-YYYY" or "DD/MM/YYYY"
+  time: string;   // "HH:mm:ss"
+  status: string; // 'pending' | 'resolved' | 'not resolved'
   text: string;
+}
+
+// date+time → epoch ms (local). Robust to missing parts.
+function dtToMs(dateStr: string, timeStr: string): number {
+  if (!dateStr) return 0;
+  const [dRaw, mRaw, yRaw] = dateStr.split(/[-/]/);
+  const d = parseInt(dRaw ?? '0', 10);
+  const m = parseInt(mRaw ?? '0', 10);
+  const y = parseInt(yRaw ?? '0', 10);
+  const [hhRaw = '0', mmRaw = '0', ssRaw = '0'] = (timeStr || '').split(':');
+  const hh = parseInt(hhRaw, 10) || 0;
+  const mm = parseInt(mmRaw, 10) || 0;
+  const ss = parseInt(ssRaw, 10) || 0;
+  if (!y || !m || !d) return 0;
+  const t = new Date(y, m - 1, d, hh, mm, ss).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 const UserRequestedRoadmaps: React.FC = () => {
@@ -68,7 +85,7 @@ const UserRequestedRoadmaps: React.FC = () => {
       const map: typeof userData = {};
       Object.entries(raw).forEach(([uid, entry]: [string, any]) => {
         map[uid] = {
-          name: decryptAES(entry.name    || '', USER_AES_SECRET_KEY),
+          name:    decryptAES(entry.name    || '', USER_AES_SECRET_KEY),
           college: decryptAES(entry.college || '', USER_AES_SECRET_KEY),
         };
       });
@@ -112,13 +129,17 @@ const UserRequestedRoadmaps: React.FC = () => {
     return () => unsub();
   }, [userData]);
 
-  // 3) Apply status filter
+  // 3) Apply status filter AND enforce newest-first ordering
   useEffect(() => {
-    setFilteredData(
+    const base =
       statusFilter === 'all'
         ? allData
-        : allData.filter((item) => item.status === statusFilter)
+        : allData.filter((item) => item.status === statusFilter);
+
+    const sorted = [...base].sort(
+      (a, b) => dtToMs(b.date, b.time) - dtToMs(a.date, a.time)
     );
+    setFilteredData(sorted);
   }, [allData, statusFilter]);
 
   // 4) Status update handler
@@ -143,16 +164,11 @@ const UserRequestedRoadmaps: React.FC = () => {
   };
 
   // 5) Tag color helper
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'resolved':     return 'green';
-      case 'not resolved': return 'red';
-      default:             return 'gold';
-    }
-  };
+  const getStatusColor = (status: string) =>
+    status === 'resolved' ? 'green' : status === 'not resolved' ? 'red' : 'gold';
 
-  // 6) Table columns
-  const columns = [
+  // 6) Table columns — no sorters; order is controlled by filteredData
+  const columns: ColumnsType<RoadmapRecord> = [
     { title: 'User Name', dataIndex: 'userName',    key: 'userName' },
     { title: 'College',   dataIndex: 'userCollege', key: 'userCollege' },
     { title: 'Date',      dataIndex: 'date',        key: 'date' },
@@ -170,14 +186,12 @@ const UserRequestedRoadmaps: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      render: (_: any, r: RoadmapRecord) => (
-        <Tag color={getStatusColor(r.status)}>{r.status}</Tag>
-      ),
+      render: (_: unknown, r) => <Tag color={getStatusColor(r.status)}>{r.status}</Tag>,
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, r: RoadmapRecord) => (
+      render: (_: unknown, r) => (
         <Button
           type="primary"
           onClick={() => {
@@ -198,7 +212,7 @@ const UserRequestedRoadmaps: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 className="text-xl font-semibold">User Requested Roadmaps</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 200 }}>
+          <Select value={statusFilter} onChange={(v: string) => setStatusFilter(v)} style={{ width: 200 }}>
             <Option value="all">All</Option>
             <Option value="pending">Pending</Option>
             <Option value="resolved">Resolved</Option>
@@ -212,7 +226,7 @@ const UserRequestedRoadmaps: React.FC = () => {
       {loading ? (
         <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
       ) : (
-        <Table
+        <Table<RoadmapRecord>
           dataSource={filteredData}
           columns={columns}
           rowKey="id"
@@ -252,8 +266,7 @@ const UserRequestedRoadmaps: React.FC = () => {
 
             {statusChangedTo && (
               <p style={{ marginTop: 12 }}>
-                ✅ Status changed to{' '}
-                <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
+                ✅ Status changed to <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
               </p>
             )}
           </>

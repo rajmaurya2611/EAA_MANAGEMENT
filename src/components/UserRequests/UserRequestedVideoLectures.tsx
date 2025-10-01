@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Spin, message, Tag, Select, Modal, Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, update } from 'firebase/database';
 import CryptoJS from 'crypto-js';
@@ -13,7 +14,7 @@ const REQUESTS_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY as
 // Helper: decrypt and strip any whitespace so Base64 padding isn't broken
 function decryptAES(ciphertext: string, key: string): string {
   try {
-    const normalized = ciphertext.replace(/\s+/g, '');
+    const normalized = (ciphertext || '').replace(/\s+/g, '');
     const parsedKey = CryptoJS.enc.Utf8.parse(key);
     const dec = CryptoJS.AES.decrypt(normalized, parsedKey, {
       mode: CryptoJS.mode.ECB,
@@ -44,10 +45,26 @@ interface RequestRecord {
   userId: string;
   userName: string;
   userCollege: string;
-  date: string;
-  time: string;
-  status: string;
+  date: string;   // "DD-MM-YYYY" or "DD/MM/YYYY"
+  time: string;   // "HH:mm:ss"
+  status: string; // 'pending' | 'resolved' | 'not resolved'
   text: string;
+}
+
+// date+time -> epoch ms (local). Robust to missing parts.
+function dtToMs(dateStr: string, timeStr: string): number {
+  if (!dateStr) return 0;
+  const [dRaw, mRaw, yRaw] = dateStr.split(/[-/]/);
+  const d = parseInt(dRaw ?? '0', 10);
+  const m = parseInt(mRaw ?? '0', 10);
+  const y = parseInt(yRaw ?? '0', 10);
+  const [hhRaw = '0', mmRaw = '0', ssRaw = '0'] = (timeStr || '').split(':');
+  const hh = parseInt(hhRaw, 10) || 0;
+  const mm = parseInt(mmRaw, 10) || 0;
+  const ss = parseInt(ssRaw, 10) || 0;
+  if (!y || !m || !d) return 0;
+  const t = new Date(y, m - 1, d, hh, mm, ss).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 const UserRequestedLectures: React.FC = () => {
@@ -112,13 +129,17 @@ const UserRequestedLectures: React.FC = () => {
     return () => unsub();
   }, [userData]);
 
-  // 3) Apply status filter
+  // 3) Apply status filter AND enforce newest-first ordering
   useEffect(() => {
-    setFilteredData(
+    const base =
       statusFilter === 'all'
         ? allData
-        : allData.filter(r => r.status === statusFilter)
+        : allData.filter(r => r.status === statusFilter);
+
+    const sorted = [...base].sort(
+      (a, b) => dtToMs(b.date, b.time) - dtToMs(a.date, a.time)
     );
+    setFilteredData(sorted);
   }, [allData, statusFilter]);
 
   // 4) Status update handler
@@ -137,13 +158,11 @@ const UserRequestedLectures: React.FC = () => {
     }
   };
 
-  const getStatusColor = (s: string) => ({
-    resolved:     'green',
-    'not resolved':'red',
-  }[s] || 'gold');
+  const getStatusColor = (s: string) =>
+    s === 'resolved' ? 'green' : s === 'not resolved' ? 'red' : 'gold';
 
-  // 5) Table columns
-  const columns = [
+  // 5) Table columns — no sorters; order is controlled by filteredData
+  const columns: ColumnsType<RequestRecord> = [
     { title: 'User Name',    dataIndex: 'userName',    key: 'userName'    },
     { title: 'College',      dataIndex: 'userCollege', key: 'userCollege' },
     { title: 'Date',         dataIndex: 'date',        key: 'date'        },
@@ -161,14 +180,14 @@ const UserRequestedLectures: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      render: (_: any, r: RequestRecord) => (
+      render: (_: unknown, r) => (
         <Tag color={getStatusColor(r.status)}>{r.status}</Tag>
       ),
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, r: RequestRecord) => (
+      render: (_: unknown, r) => (
         <Button
           type="primary"
           onClick={() => {
@@ -189,7 +208,7 @@ const UserRequestedLectures: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2>User Requested Lectures</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Select value={statusFilter} onChange={val => setStatusFilter(val)} style={{ width: 180 }}>
+          <Select value={statusFilter} onChange={(val) => setStatusFilter(val as any)} style={{ width: 180 }}>
             <Option value="all">All</Option>
             <Option value="pending">Pending</Option>
             <Option value="resolved">Resolved</Option>
@@ -203,7 +222,7 @@ const UserRequestedLectures: React.FC = () => {
       {loading ? (
         <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
       ) : (
-        <Table
+        <Table<RequestRecord>
           dataSource={filteredData}
           columns={columns}
           rowKey="id"
@@ -233,7 +252,7 @@ const UserRequestedLectures: React.FC = () => {
               <Select
                 value={selectedItem.status}
                 style={{ marginLeft: 10, width: 180 }}
-                onChange={value => handleStatusChange(selectedItem.id, value)}
+                onChange={(value) => handleStatusChange(selectedItem.id, value)}
               >
                 <Option value="pending">Pending</Option>
                 <Option value="resolved">Resolved</Option>
@@ -243,8 +262,7 @@ const UserRequestedLectures: React.FC = () => {
 
             {statusChangedTo && (
               <p style={{ marginTop: 12 }}>
-                ✅ Status changed to{' '}
-                <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
+                ✅ Status changed to <Tag color={getStatusColor(statusChangedTo)}>{statusChangedTo}</Tag>
               </p>
             )}
           </>
