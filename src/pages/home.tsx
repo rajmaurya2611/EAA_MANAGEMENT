@@ -138,7 +138,7 @@ const Home: React.FC = () => {
             { key: 'booksManage', label: 'Manage', icon: <EditOutlined /> },
           ],
         },
-         {
+        {
           key: 'lectures',
           label: 'Lectures',
           icon: <FileTextOutlined />,
@@ -194,12 +194,19 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        style={{ overflowY: 'auto' }}
+        style={{
+          height: '100vh',
+          position: 'sticky',
+          top: 0,
+          left: 0,
+          overflowY: 'auto',     // ← Sidebar scrolls independently
+          overflowX: 'hidden',
+        }}
       >
         <div className="demo-logo-vertical" />
         <Menu
@@ -207,6 +214,7 @@ const Home: React.FC = () => {
           defaultSelectedKeys={['dashboard']}
           mode="inline"
           onClick={({ key }) => handleMenuClick(key)}
+          style={{ height: '100%', overflowY: 'auto' }} // ensures menu fills sider and scrolls
         >
           {navItems.map((item) =>
             item.children ? (
@@ -239,19 +247,17 @@ const Home: React.FC = () => {
       <Layout>
         <Content
           style={{
-            margin: '0',
-            paddingTop: 0,
-            overflowY: 'auto',
             height: '100vh',
+            overflowY: 'auto',  // ← Main content scrolls independently
+            margin: 0,
+            paddingTop: 0,
           }}
         >
           <div
             style={{
               padding: 0,
-              minHeight: 360,
+              minHeight: '100%',
               background: colorBgContainer,
-              overflowY: 'auto',
-              maxHeight: '100vh',
             }}
           >
             {activeView === 'dashboard' && <Dashboard />}
@@ -268,7 +274,7 @@ const Home: React.FC = () => {
             {activeView === 'syllabusManage' && <ManageSyllabus />}
             {activeView === 'booksNew' && <NewEBooks />}
             {activeView === 'booksManage' && <ManageEBooks/>}
-             {activeView === 'lecturesNew' && <NewLectures />}
+            {activeView === 'lecturesNew' && <NewLectures />}
             {activeView === 'lecturesManage' && <ManageLectures/>}
             {activeView === 'userReqNotes' && <UserRequestedNotes />}
             {activeView === 'userReqPYQs' && <UserRequestedPYQs />}
@@ -290,7 +296,7 @@ const Home: React.FC = () => {
             {activeView === 'userContributedQuantum' && <ManageUserContributedQuantums/>}
             {activeView === 'userContributedPYQs' && <ManageUserContributedPyqs/>}
             {activeView === 'userContributedSyllabus' && <ManageUserContributedSyllabus/>}
-            { activeView === 'userFeedback' && <UserFeedbacks/>}
+            {activeView === 'userFeedback' && <UserFeedbacks/>}
           </div>
         </Content>
       </Layout>
