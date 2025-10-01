@@ -45,6 +45,7 @@ import NewLectures from '../components/VideoLectures/NewVideoLectures';
 import ManageLectures from '../components/VideoLectures/ManageVideoLectures';
 import UserRequestedLectures from '../components/UserRequests/UserRequestedVideoLectures';
 import UserFeedbacks from '../components/Feedback/Feedback';
+import UserRequestedEBooks from '../components/UserRequests/UserRequestedEBooks';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -171,6 +172,7 @@ const Home: React.FC = () => {
         { key: 'userReqRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
         { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
         { key: 'userReqLectures', label: 'Lectures', icon: <AppstoreOutlined /> },
+        { key: 'userReqEBooks', label: 'E-Books', icon: <AppstoreOutlined /> },
       ],
     },
     {
@@ -274,6 +276,7 @@ const Home: React.FC = () => {
             {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps />}
             {activeView === 'userReqSyllabus' && <UserRequestedSyllabus />}
             {activeView === 'userReqLectures' && <UserRequestedLectures />}
+            {activeView === 'userReqEBooks' && <UserRequestedEBooks/>}
             {activeView === 'aptitude_practice' && <AptitudePractice/>}
             {activeView === 'interview_questions' && <InterviewQuestions/>}
             {activeView === 'roadmap' && <Roadmap/>}
