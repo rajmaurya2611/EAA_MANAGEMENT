@@ -317,7 +317,6 @@ const UsersVersion12: React.FC = () => {
           icon={<ReloadOutlined />}
           onClick={resetFilters}
         >
-          Reset Filters
         </Button>
       </div>
 
