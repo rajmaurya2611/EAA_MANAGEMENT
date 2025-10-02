@@ -73,6 +73,10 @@ const UsersVersion12: React.FC = () => {
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([null, null]);
   const [searchText, setSearchText] = useState("");
 
+  // NEW: pagination state (user-controllable page size)
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
   // Fetch & decrypt data
   useEffect(() => {
     const db = getDatabase();
@@ -114,6 +118,7 @@ const UsersVersion12: React.FC = () => {
       setUsers(sorted);
       setFilteredUsers(sorted);
       setLoading(false);
+      setPage(1); // reset to first page on fresh load
     };
 
     onValue(usersRef, listener, (err) => {
@@ -164,6 +169,7 @@ const UsersVersion12: React.FC = () => {
     });
 
     setFilteredUsers(sorted);
+    setPage(1); // reset to first page when filters change
   }, [
     collegeFilter,
     branchFilter,
@@ -186,6 +192,8 @@ const UsersVersion12: React.FC = () => {
     setYearFilter(null);
     setDateRange([null, null]);
     setSearchText("");
+    setPage(1);
+    setPageSize(10); // keep default page size on reset
   };
 
   const unique = (arr: string[]) =>
@@ -316,8 +324,7 @@ const UsersVersion12: React.FC = () => {
         <Button
           icon={<ReloadOutlined />}
           onClick={resetFilters}
-        >
-        </Button>
+        />
       </div>
 
       {/* Table */}
@@ -333,9 +340,19 @@ const UsersVersion12: React.FC = () => {
         <Table
           columns={columns}
           dataSource={filteredUsers}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: true }}
           rowKey="key"
+          scroll={{ x: true }}
+          pagination={{
+            current: page,
+            pageSize,
+            showSizeChanger: true,
+            pageSizeOptions: [10, 20, 50, 100],
+            showTotal: (total, range) => `${range[0]}–${range[1]} of ${total}`,
+            onChange: (p, ps) => {
+              setPage(p);
+              setPageSize(ps);
+            },
+          }}
         />
       )}
     </div>
