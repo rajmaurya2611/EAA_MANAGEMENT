@@ -8,9 +8,23 @@ import {
   Form,
   Input,
   message,
+  Upload,
+  Switch,
+  Progress,
 } from 'antd';
+import type { UploadProps } from 'antd';
+import type { UploadRequestOption as RcUploadRequestOption } from 'rc-upload/lib/interface';
+
 import { db } from '../../firebaseConfig';
 import { ref as dbRef, onValue, push, set } from 'firebase/database';
+
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+
 import CryptoJS from 'crypto-js';
 
 const { Sider, Content } = Layout;
@@ -64,7 +78,147 @@ const SecondYearPYQ: React.FC = () => {
 
   // ----------------------- Existing Content Area Form -----------------------
   const [subjectForm] = Form.useForm();
-  const [showSubjectSuccessModal, setShowSubjectSuccessModal] = useState<boolean>(false);
+  const [showSubjectSuccessModal, setShowSubjectSuccessModal] =
+    useState<boolean>(false);
+
+  /* ------------------------------------------------------------------
+   * FireStorage support (added only; core flow unchanged)
+   * ------------------------------------------------------------------ */
+  const storage = getStorage();
+
+  // Places where `pdf` exists:
+  // 1) Content form
+  // 2) Add Branch modal step 3
+  // 3) Add Year modal step 2
+  const [useUploadPdfContent, setUseUploadPdfContent] = useState(true);
+  const [useUploadPdfBranchDetails, setUseUploadPdfBranchDetails] =
+    useState(true);
+  const [useUploadPdfAddYearDetails, setUseUploadPdfAddYearDetails] =
+    useState(true);
+
+  const [uploadingPdfContent, setUploadingPdfContent] = useState(false);
+  const [uploadProgressContent, setUploadProgressContent] = useState(0);
+
+  const [uploadingPdfBranchDetails, setUploadingPdfBranchDetails] =
+    useState(false);
+  const [uploadProgressBranchDetails, setUploadProgressBranchDetails] =
+    useState(0);
+
+  const [uploadingPdfAddYear, setUploadingPdfAddYear] = useState(false);
+  const [uploadProgressAddYear, setUploadProgressAddYear] = useState(0);
+
+  const sanitizePathPart = (s: string) =>
+    (s || 'unknown').trim().replace(/[.#$[\]/\\]/g, '_');
+
+  const sanitizeFileName = (name: string) =>
+    (name || 'file.pdf').replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  // Storage path aligned with DB:
+  // version12/Materials/Pyq/Second_Year/<branch>/<year>/pdf/<timestamp>_<filename>
+  const buildStoragePath = (branch: string, year: string, file: File) => {
+    const safeBranch = sanitizePathPart(branch);
+    const safeYear = sanitizePathPart(year);
+    const safeName = sanitizeFileName(file.name);
+    return `version12/Materials/Pyq/Second_Year/${safeBranch}/${safeYear}/pdf/${Date.now()}_${safeName}`;
+  };
+
+  const uploadPdfAndFillField = async (
+    file: File,
+    branch: string,
+    year: string,
+    form: any,
+    setUploading: (v: boolean) => void,
+    setProgress: (v: number) => void
+  ) => {
+    const isPdf =
+      file?.type === 'application/pdf' ||
+      file?.name?.toLowerCase().endsWith('.pdf');
+    if (!isPdf) throw new Error('Only PDF files are allowed');
+    if (!branch?.trim()) throw new Error('Branch missing');
+    if (!year?.trim()) throw new Error('Year missing');
+
+    setUploading(true);
+    setProgress(0);
+
+    const path = buildStoragePath(branch, year, file);
+    const sRef = storageRef(storage, path);
+
+    return await new Promise<string>((resolve, reject) => {
+      const task = uploadBytesResumable(sRef, file, {
+        contentType: 'application/pdf',
+      });
+
+      task.on(
+        'state_changed',
+        (snap) => {
+          const pct = Math.round(
+            (snap.bytesTransferred / snap.totalBytes) * 100
+          );
+          setProgress(pct);
+        },
+        (err) => {
+          setUploading(false);
+          reject(err);
+        },
+        async () => {
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            form.setFieldsValue({ pdf: url }); // auto-fill existing field
+            setUploading(false);
+            resolve(url);
+          } catch (err) {
+            setUploading(false);
+            reject(err);
+          }
+        }
+      );
+    });
+  };
+
+  const makeCustomRequest =
+    (
+      branchGetter: () => string,
+      yearGetter: () => string,
+      form: any,
+      setUploading: (v: boolean) => void,
+      setProgress: (v: number) => void
+    ): UploadProps['customRequest'] =>
+    async (options: RcUploadRequestOption) => {
+      const { file, onError, onSuccess } = options;
+      try {
+        await uploadPdfAndFillField(
+          file as File,
+          branchGetter(),
+          yearGetter(),
+          form,
+          setUploading,
+          setProgress
+        );
+        message.success('PDF uploaded & link generated.');
+        onSuccess?.({ ok: true } as any);
+      } catch (err: any) {
+        console.error('Upload failed:', err);
+        message.error(err?.message || 'PDF upload failed.');
+        onError?.(err);
+      }
+    };
+
+  const resetContentUploadUI = () => {
+    setUploadingPdfContent(false);
+    setUploadProgressContent(0);
+  };
+
+  const resetBranchDetailsUploadUI = () => {
+    setUploadingPdfBranchDetails(false);
+    setUploadProgressBranchDetails(0);
+  };
+
+  const resetAddYearUploadUI = () => {
+    setUploadingPdfAddYear(false);
+    setUploadProgressAddYear(0);
+  };
+
+  /* ------------------------------------------------------------------ */
 
   // ----------------------- Data Listener -----------------------
   useEffect(() => {
@@ -100,6 +254,10 @@ const SecondYearPYQ: React.FC = () => {
       setSelectedBranch(branch);
       setShowAddYearModal(true);
       setAddYearModalStep(1);
+
+      // tidy
+      yearModalForm.setFieldsValue({ pdf: '' });
+      resetAddYearUploadUI();
       return;
     }
     // Assume key is in the format "branch-year" (year may include dashes)
@@ -109,6 +267,10 @@ const SecondYearPYQ: React.FC = () => {
       const year = key.substring(separatorIndex + 1);
       setSelectedBranch(branch);
       setSelectedYear(year);
+
+      // tidy
+      subjectForm.setFieldsValue({ pdf: '' });
+      resetContentUploadUI();
     }
   };
 
@@ -134,6 +296,10 @@ const SecondYearPYQ: React.FC = () => {
     }
     setNewYearForBranch(yearValue);
     setModalStep(3);
+
+    // tidy
+    branchDetailsForm.setFieldsValue({ pdf: '' });
+    resetBranchDetailsUploadUI();
   };
 
   // Step 3: Ask for form details and save branch with its initial subject note.
@@ -177,6 +343,8 @@ const SecondYearPYQ: React.FC = () => {
         branchDetailsForm.resetFields();
         setModalStep(1);
         setShowAddBranchModal(false);
+
+        resetBranchDetailsUploadUI();
       }, 1000);
     } catch (error) {
       message.error('Failed to add branch.');
@@ -189,6 +357,8 @@ const SecondYearPYQ: React.FC = () => {
     branchNameForm.resetFields();
     branchYearForm.resetFields();
     branchDetailsForm.resetFields();
+
+    resetBranchDetailsUploadUI();
   };
 
   // ----------------------- Existing Content Area Form Handler -----------------------
@@ -229,6 +399,8 @@ const SecondYearPYQ: React.FC = () => {
       setTimeout(() => {
         subjectForm.resetFields();
         setShowSubjectSuccessModal(false);
+
+        resetContentUploadUI();
       }, 1000);
     } catch (error) {
       message.error('Failed to add subject note.');
@@ -237,6 +409,7 @@ const SecondYearPYQ: React.FC = () => {
 
   const onSubjectCancel = () => {
     subjectForm.resetFields();
+    resetContentUploadUI();
   };
 
   // ----------------------- Existing "Add Year" Modal Handlers -----------------------
@@ -248,6 +421,10 @@ const SecondYearPYQ: React.FC = () => {
     }
     setNewYear(yearValue);
     setAddYearModalStep(2);
+
+    // tidy
+    yearModalForm.setFieldsValue({ pdf: '' });
+    resetAddYearUploadUI();
   };
 
   const onFinishAddYearStep2 = async (values: any) => {
@@ -284,6 +461,8 @@ const SecondYearPYQ: React.FC = () => {
         yearModalForm.resetFields();
         setAddYearModalStep(1);
         setShowAddYearModal(false);
+
+        resetAddYearUploadUI();
       }, 1000);
     } catch (error) {
       message.error('Failed to add year.');
@@ -294,6 +473,8 @@ const SecondYearPYQ: React.FC = () => {
     setShowAddYearModal(false);
     setAddYearModalStep(1);
     yearModalForm.resetFields();
+
+    resetAddYearUploadUI();
   };
 
   return (
@@ -322,18 +503,24 @@ const SecondYearPYQ: React.FC = () => {
             onClick={() => {
               setShowAddBranchModal(true);
               setModalStep(1);
+
+              // tidy
+              branchDetailsForm.setFieldsValue({ pdf: '' });
+              resetBranchDetailsUploadUI();
             }}
           >
             Add Branch
           </Button>
         </Spin>
       </Sider>
+
       <Layout style={{ padding: '24px' }}>
         <Content style={{ background: '#fff', padding: 24, minHeight: 280 }}>
           <h2>
             You are uploading to <strong>{selectedBranch}</strong> year{' '}
             <strong>{selectedYear}</strong>
           </h2>
+
           <Form
             form={subjectForm}
             layout="vertical"
@@ -347,13 +534,68 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter author name" />
             </Form.Item>
-            <Form.Item
-              label="PDF Link"
-              name="pdf"
-              rules={[{ required: true, message: 'Please enter the PDF link' }]}
-            >
-              <Input placeholder="Enter PDF link" />
+
+            {/* NEW: Upload/Link toggle */}
+            <Form.Item label="PDF Input Mode">
+              <Switch
+                checked={useUploadPdfContent}
+                onChange={(v) => {
+                  setUseUploadPdfContent(v);
+                  subjectForm.setFieldsValue({ pdf: '' });
+                  resetContentUploadUI();
+                }}
+                checkedChildren="Upload"
+                unCheckedChildren="Link"
+              />
             </Form.Item>
+
+            {useUploadPdfContent ? (
+              <>
+                <Form.Item label="Upload PDF">
+                  <Upload.Dragger
+                    accept="application/pdf"
+                    multiple={false}
+                    maxCount={1}
+                    customRequest={makeCustomRequest(
+                      () => selectedBranch,
+                      () => selectedYear,
+                      subjectForm,
+                      setUploadingPdfContent,
+                      setUploadProgressContent
+                    )}
+                    onRemove={() => {
+                      subjectForm.setFieldsValue({ pdf: '' });
+                      resetContentUploadUI();
+                      return true;
+                    }}
+                  >
+                    <p style={{ marginBottom: 0 }}>
+                      Drag & drop a PDF here, or click to select
+                    </p>
+                  </Upload.Dragger>
+                  {uploadingPdfContent && <Progress percent={uploadProgressContent} />}
+                </Form.Item>
+
+                <Form.Item
+                  label="PDF Link"
+                  name="pdf"
+                  rules={[
+                    { required: true, message: 'Please upload a PDF to auto-generate the link' },
+                  ]}
+                >
+                  <Input readOnly placeholder="Upload will auto-fill the download URL" />
+                </Form.Item>
+              </>
+            ) : (
+              <Form.Item
+                label="PDF Link"
+                name="pdf"
+                rules={[{ required: true, message: 'Please enter the PDF link' }]}
+              >
+                <Input placeholder="Enter PDF link" />
+              </Form.Item>
+            )}
+
             <Form.Item
               label="Subject Code"
               name="sub_code"
@@ -361,6 +603,7 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter subject code" />
             </Form.Item>
+
             <Form.Item
               label="Subject Name"
               name="sub_name"
@@ -368,6 +611,7 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter subject name" />
             </Form.Item>
+
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 Add Subject Note
@@ -388,7 +632,11 @@ const SecondYearPYQ: React.FC = () => {
         footer={null}
       >
         {modalStep === 1 && (
-          <Form form={branchNameForm} layout="vertical" onFinish={onFinishBranchStep1}>
+          <Form
+            form={branchNameForm}
+            layout="vertical"
+            onFinish={onFinishBranchStep1}
+          >
             <Form.Item
               label="Branch Name"
               name="branchName"
@@ -403,8 +651,13 @@ const SecondYearPYQ: React.FC = () => {
             </Form.Item>
           </Form>
         )}
+
         {modalStep === 2 && (
-          <Form form={branchYearForm} layout="vertical" onFinish={onFinishBranchStep2}>
+          <Form
+            form={branchYearForm}
+            layout="vertical"
+            onFinish={onFinishBranchStep2}
+          >
             <Form.Item
               label="Year"
               name="year"
@@ -419,6 +672,7 @@ const SecondYearPYQ: React.FC = () => {
             </Form.Item>
           </Form>
         )}
+
         {modalStep === 3 && (
           <Form
             form={branchDetailsForm}
@@ -433,13 +687,70 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter author name" />
             </Form.Item>
-            <Form.Item
-              label="PDF Link"
-              name="pdf"
-              rules={[{ required: true, message: 'Please enter the PDF link' }]}
-            >
-              <Input placeholder="Enter PDF link" />
+
+            {/* NEW: Upload/Link toggle in branch details */}
+            <Form.Item label="PDF Input Mode">
+              <Switch
+                checked={useUploadPdfBranchDetails}
+                onChange={(v) => {
+                  setUseUploadPdfBranchDetails(v);
+                  branchDetailsForm.setFieldsValue({ pdf: '' });
+                  resetBranchDetailsUploadUI();
+                }}
+                checkedChildren="Upload"
+                unCheckedChildren="Link"
+              />
             </Form.Item>
+
+            {useUploadPdfBranchDetails ? (
+              <>
+                <Form.Item label="Upload PDF">
+                  <Upload.Dragger
+                    accept="application/pdf"
+                    multiple={false}
+                    maxCount={1}
+                    customRequest={makeCustomRequest(
+                      () => newBranchName,
+                      () => newYearForBranch,
+                      branchDetailsForm,
+                      setUploadingPdfBranchDetails,
+                      setUploadProgressBranchDetails
+                    )}
+                    onRemove={() => {
+                      branchDetailsForm.setFieldsValue({ pdf: '' });
+                      resetBranchDetailsUploadUI();
+                      return true;
+                    }}
+                  >
+                    <p style={{ marginBottom: 0 }}>
+                      Drag & drop a PDF here, or click to select
+                    </p>
+                  </Upload.Dragger>
+                  {uploadingPdfBranchDetails && (
+                    <Progress percent={uploadProgressBranchDetails} />
+                  )}
+                </Form.Item>
+
+                <Form.Item
+                  label="PDF Link"
+                  name="pdf"
+                  rules={[
+                    { required: true, message: 'Please upload a PDF to auto-generate the link' },
+                  ]}
+                >
+                  <Input readOnly placeholder="Upload will auto-fill the download URL" />
+                </Form.Item>
+              </>
+            ) : (
+              <Form.Item
+                label="PDF Link"
+                name="pdf"
+                rules={[{ required: true, message: 'Please enter the PDF link' }]}
+              >
+                <Input placeholder="Enter PDF link" />
+              </Form.Item>
+            )}
+
             <Form.Item
               label="Subject Code"
               name="sub_code"
@@ -447,6 +758,7 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter subject code" />
             </Form.Item>
+
             <Form.Item
               label="Subject Name"
               name="sub_name"
@@ -454,6 +766,7 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter subject name" />
             </Form.Item>
+
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 Add Branch
@@ -463,7 +776,7 @@ const SecondYearPYQ: React.FC = () => {
         )}
       </Modal>
 
-      {/* ----------------------- "Add Year" Modal (Unchanged) ----------------------- */}
+      {/* ----------------------- "Add Year" Modal (flow unchanged; pdf supports upload) ----------------------- */}
       <Modal
         open={showAddYearModal}
         title="Add New Year"
@@ -471,7 +784,11 @@ const SecondYearPYQ: React.FC = () => {
         footer={null}
       >
         {addYearModalStep === 1 && (
-          <Form form={yearModalForm} layout="vertical" onFinish={onFinishAddYearStep1}>
+          <Form
+            form={yearModalForm}
+            layout="vertical"
+            onFinish={onFinishAddYearStep1}
+          >
             <Form.Item
               label="Year"
               name="year"
@@ -486,6 +803,7 @@ const SecondYearPYQ: React.FC = () => {
             </Form.Item>
           </Form>
         )}
+
         {addYearModalStep === 2 && (
           <Form
             form={yearModalForm}
@@ -500,13 +818,68 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter author name" />
             </Form.Item>
-            <Form.Item
-              label="PDF Link"
-              name="pdf"
-              rules={[{ required: true, message: 'Please enter the PDF link' }]}
-            >
-              <Input placeholder="Enter PDF link" />
+
+            {/* NEW: Upload/Link toggle in add-year details */}
+            <Form.Item label="PDF Input Mode">
+              <Switch
+                checked={useUploadPdfAddYearDetails}
+                onChange={(v) => {
+                  setUseUploadPdfAddYearDetails(v);
+                  yearModalForm.setFieldsValue({ pdf: '' });
+                  resetAddYearUploadUI();
+                }}
+                checkedChildren="Upload"
+                unCheckedChildren="Link"
+              />
             </Form.Item>
+
+            {useUploadPdfAddYearDetails ? (
+              <>
+                <Form.Item label="Upload PDF">
+                  <Upload.Dragger
+                    accept="application/pdf"
+                    multiple={false}
+                    maxCount={1}
+                    customRequest={makeCustomRequest(
+                      () => selectedBranch,
+                      () => newYear,
+                      yearModalForm,
+                      setUploadingPdfAddYear,
+                      setUploadProgressAddYear
+                    )}
+                    onRemove={() => {
+                      yearModalForm.setFieldsValue({ pdf: '' });
+                      resetAddYearUploadUI();
+                      return true;
+                    }}
+                  >
+                    <p style={{ marginBottom: 0 }}>
+                      Drag & drop a PDF here, or click to select
+                    </p>
+                  </Upload.Dragger>
+                  {uploadingPdfAddYear && <Progress percent={uploadProgressAddYear} />}
+                </Form.Item>
+
+                <Form.Item
+                  label="PDF Link"
+                  name="pdf"
+                  rules={[
+                    { required: true, message: 'Please upload a PDF to auto-generate the link' },
+                  ]}
+                >
+                  <Input readOnly placeholder="Upload will auto-fill the download URL" />
+                </Form.Item>
+              </>
+            ) : (
+              <Form.Item
+                label="PDF Link"
+                name="pdf"
+                rules={[{ required: true, message: 'Please enter the PDF link' }]}
+              >
+                <Input placeholder="Enter PDF link" />
+              </Form.Item>
+            )}
+
             <Form.Item
               label="Subject Code"
               name="sub_code"
@@ -514,6 +887,7 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter subject code" />
             </Form.Item>
+
             <Form.Item
               label="Subject Name"
               name="sub_name"
@@ -521,6 +895,7 @@ const SecondYearPYQ: React.FC = () => {
             >
               <Input placeholder="Enter subject name" />
             </Form.Item>
+
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 Add Year
@@ -537,7 +912,11 @@ const SecondYearPYQ: React.FC = () => {
         onOk={() => setShowSubjectSuccessModal(false)}
         onCancel={() => setShowSubjectSuccessModal(false)}
         footer={[
-          <Button key="ok" type="primary" onClick={() => setShowSubjectSuccessModal(false)}>
+          <Button
+            key="ok"
+            type="primary"
+            onClick={() => setShowSubjectSuccessModal(false)}
+          >
             OK
           </Button>,
         ]}
@@ -549,3 +928,556 @@ const SecondYearPYQ: React.FC = () => {
 };
 
 export default SecondYearPYQ;
+
+
+// import React, { useState, useEffect } from 'react';
+// import {
+//   Layout,
+//   Menu,
+//   Spin,
+//   Button,
+//   Modal,
+//   Form,
+//   Input,
+//   message,
+// } from 'antd';
+// import { db } from '../../firebaseConfig';
+// import { ref as dbRef, onValue, push, set } from 'firebase/database';
+// import CryptoJS from 'crypto-js';
+
+// const { Sider, Content } = Layout;
+
+// const PYQ_AES_SECRET_KEY = import.meta.env.VITE_MATERIALS_AES_SECRET_KEY;
+
+// // Encryption function for text fields
+// const encryptAES = (plainText: string): string => {
+//   try {
+//     const key = CryptoJS.enc.Utf8.parse(PYQ_AES_SECRET_KEY);
+//     const encrypted = CryptoJS.AES.encrypt(plainText, key, {
+//       mode: CryptoJS.mode.ECB,
+//       padding: CryptoJS.pad.Pkcs7,
+//     });
+//     return encrypted.toString();
+//   } catch (error) {
+//     console.error('Encryption failed:', error);
+//     return plainText;
+//   }
+// };
+
+// interface BranchPyqs {
+//   branch: string;
+//   // Each branch contains year nodes, e.g. "2020-2019", each holding subject notes
+//   pyqs: { [year: string]: { [noteId: string]: any } };
+// }
+
+// const SecondYearPYQ: React.FC = () => {
+//   const [branches, setBranches] = useState<BranchPyqs[]>([]);
+//   const [selectedBranch, setSelectedBranch] = useState<string>('');
+//   const [selectedYear, setSelectedYear] = useState<string>('');
+//   const [loading, setLoading] = useState<boolean>(true);
+
+//   // ----------------------- Existing Modal: Add Year -----------------------
+//   const [showAddYearModal, setShowAddYearModal] = useState<boolean>(false);
+//   const [addYearModalStep, setAddYearModalStep] = useState<number>(1);
+//   const [newYear, setNewYear] = useState<string>('');
+//   const [yearModalForm] = Form.useForm();
+
+//   // ----------------------- Modified "Add Branch" Modal -----------------------
+//   // (Previously the "Add Subject" modal)
+//   const [showAddBranchModal, setShowAddBranchModal] = useState<boolean>(false);
+//   // modalStep: 1 = branch name, 2 = year name, 3 = form details
+//   const [modalStep, setModalStep] = useState<number>(1);
+//   const [newBranchName, setNewBranchName] = useState<string>('');
+//   const [newYearForBranch, setNewYearForBranch] = useState<string>('');
+//   // Separate form instances for each step:
+//   const [branchNameForm] = Form.useForm();
+//   const [branchYearForm] = Form.useForm();
+//   const [branchDetailsForm] = Form.useForm();
+
+//   // ----------------------- Existing Content Area Form -----------------------
+//   const [subjectForm] = Form.useForm();
+//   const [showSubjectSuccessModal, setShowSubjectSuccessModal] = useState<boolean>(false);
+
+//   // ----------------------- Data Listener -----------------------
+//   useEffect(() => {
+//     const PyqsRef = dbRef(db, 'version12/Materials/Pyq/Second_Year');
+//     const unsubscribe = onValue(PyqsRef, (snapshot) => {
+//       const data = snapshot.val();
+//       if (data) {
+//         const branchList: BranchPyqs[] = Object.keys(data).map((branch) => ({
+//           branch,
+//           pyqs: data[branch],
+//         }));
+//         setBranches(branchList);
+//         // Default to first branch and its first year if nothing is selected.
+//         if (branchList.length > 0 && !selectedBranch) {
+//           setSelectedBranch(branchList[0].branch);
+//           const years = Object.keys(branchList[0].pyqs);
+//           if (years.length > 0) {
+//             setSelectedYear(years[0]);
+//           }
+//         }
+//       } else {
+//         setBranches([]);
+//       }
+//       setLoading(false);
+//     });
+//     return () => unsubscribe();
+//   }, [selectedBranch]);
+
+//   // ----------------------- Menu Click Handler -----------------------
+//   const handleMenuClick = ({ key }: { key: string }) => {
+//     if (key.endsWith('-add-year')) {
+//       const branch = key.substring(0, key.length - '-add-year'.length);
+//       setSelectedBranch(branch);
+//       setShowAddYearModal(true);
+//       setAddYearModalStep(1);
+//       return;
+//     }
+//     // Assume key is in the format "branch-year" (year may include dashes)
+//     const separatorIndex = key.indexOf('-');
+//     if (separatorIndex !== -1) {
+//       const branch = key.substring(0, separatorIndex);
+//       const year = key.substring(separatorIndex + 1);
+//       setSelectedBranch(branch);
+//       setSelectedYear(year);
+//     }
+//   };
+
+//   // ----------------------- Modified "Add Branch" Modal Handlers -----------------------
+
+//   // Step 1: Ask for branch name.
+//   const onFinishBranchStep1 = (values: any) => {
+//     const branchName = values.branchName.trim();
+//     if (!branchName) {
+//       message.error('Please enter a valid branch name.');
+//       return;
+//     }
+//     setNewBranchName(branchName);
+//     setModalStep(2);
+//   };
+
+//   // Step 2: Ask for the year name.
+//   const onFinishBranchStep2 = (values: any) => {
+//     const yearValue = values.year.trim();
+//     if (!yearValue) {
+//       message.error('Please enter a valid year.');
+//       return;
+//     }
+//     setNewYearForBranch(yearValue);
+//     setModalStep(3);
+//   };
+
+//   // Step 3: Ask for form details and save branch with its initial subject note.
+//   const onFinishBranchStep3 = async (values: any) => {
+//     const { by, pdf, sub_code, sub_name } = values;
+//     if (!by || !pdf || !sub_code || !sub_name) {
+//       message.error('Please fill in all the required fields.');
+//       return;
+//     }
+//     const current = new Date();
+//     const dateStr = current.toLocaleDateString();
+//     const encryptedPdf = encryptAES(pdf);
+//     const encryptedSubCode = encryptAES(sub_code);
+//     const encryptedSubName = encryptAES(sub_name);
+//     const encryptedBy = encryptAES(by);
+//     // Create branch under newBranchName and newYearForBranch.
+//     const branchPath = `version12/Materials/Pyq/Second_Year/${newBranchName}/${newYearForBranch}`;
+//     const newSubjectRef = push(dbRef(db, branchPath));
+//     const newSubjectId = newSubjectRef.key;
+//     const subjectData = {
+//       by: encryptedBy,
+//       date: dateStr,
+//       dislikes: 0,
+//       likes: 0,
+//       id: newSubjectId,
+//       pdf: encryptedPdf,
+//       sub_code: encryptedSubCode,
+//       sub_name: encryptedSubName,
+//     };
+
+//     try {
+//       await set(newSubjectRef, subjectData);
+//       message.success('Branch added successfully!');
+//       // Update selected branch/year to the newly added ones.
+//       setSelectedBranch(newBranchName);
+//       setSelectedYear(newYearForBranch);
+//       // Reset the modal state.
+//       setTimeout(() => {
+//         branchNameForm.resetFields();
+//         branchYearForm.resetFields();
+//         branchDetailsForm.resetFields();
+//         setModalStep(1);
+//         setShowAddBranchModal(false);
+//       }, 1000);
+//     } catch (error) {
+//       message.error('Failed to add branch.');
+//     }
+//   };
+
+//   const handleAddBranchModalCancel = () => {
+//     setShowAddBranchModal(false);
+//     setModalStep(1);
+//     branchNameForm.resetFields();
+//     branchYearForm.resetFields();
+//     branchDetailsForm.resetFields();
+//   };
+
+//   // ----------------------- Existing Content Area Form Handler -----------------------
+//   const onFinishSubject = async (values: any) => {
+//     if (!selectedBranch || !selectedYear) {
+//       message.error('Please select a branch and a year.');
+//       return;
+//     }
+//     const { pdf, sub_code, sub_name, by } = values;
+//     if (!pdf || !sub_code || !sub_name || !by) {
+//       message.error('Please fill in all fields.');
+//       return;
+//     }
+//     const current = new Date();
+//     const dateStr = current.toLocaleDateString();
+//     const encryptedPdf = encryptAES(pdf);
+//     const encryptedSubCode = encryptAES(sub_code);
+//     const encryptedSubName = encryptAES(sub_name);
+//     const encryptedBy = encryptAES(by);
+//     const branchPath = `version12/Materials/Pyq/Second_Year/${selectedBranch}/${selectedYear}`;
+//     const newNoteRef = push(dbRef(db, branchPath));
+//     const newNoteId = newNoteRef.key;
+//     const noteData = {
+//       by: encryptedBy,
+//       date: dateStr,
+//       dislikes: 0,
+//       likes: 0,
+//       id: newNoteId,
+//       pdf: encryptedPdf,
+//       sub_code: encryptedSubCode,
+//       sub_name: encryptedSubName,
+//     };
+
+//     try {
+//       await set(newNoteRef, noteData);
+//       message.success('Subject note added successfully!');
+//       setShowSubjectSuccessModal(true);
+//       setTimeout(() => {
+//         subjectForm.resetFields();
+//         setShowSubjectSuccessModal(false);
+//       }, 1000);
+//     } catch (error) {
+//       message.error('Failed to add subject note.');
+//     }
+//   };
+
+//   const onSubjectCancel = () => {
+//     subjectForm.resetFields();
+//   };
+
+//   // ----------------------- Existing "Add Year" Modal Handlers -----------------------
+//   const onFinishAddYearStep1 = (values: any) => {
+//     const yearValue = values.year.trim();
+//     if (!yearValue) {
+//       message.error('Please enter a valid year.');
+//       return;
+//     }
+//     setNewYear(yearValue);
+//     setAddYearModalStep(2);
+//   };
+
+//   const onFinishAddYearStep2 = async (values: any) => {
+//     const { pdf, sub_code, sub_name, by } = values;
+//     if (!pdf || !sub_code || !sub_name || !by) {
+//       message.error('Please fill all the required fields.');
+//       return;
+//     }
+//     const current = new Date();
+//     const dateStr = current.toLocaleDateString();
+//     const encryptedPdf = encryptAES(pdf);
+//     const encryptedSubCode = encryptAES(sub_code);
+//     const encryptedSubName = encryptAES(sub_name);
+//     const encryptedBy = encryptAES(by);
+//     const branchPath = `version12/Materials/Pyq/Second_Year/${selectedBranch}/${newYear}`;
+//     const newNoteRef = push(dbRef(db, branchPath));
+//     const newNoteId = newNoteRef.key;
+//     const noteData = {
+//       by: encryptedBy,
+//       date: dateStr,
+//       dislikes: 0,
+//       likes: 0,
+//       id: newNoteId,
+//       pdf: encryptedPdf,
+//       sub_code: encryptedSubCode,
+//       sub_name: encryptedSubName,
+//     };
+
+//     try {
+//       await set(newNoteRef, noteData);
+//       message.success('Year added successfully with its subject note!');
+//       setSelectedYear(newYear);
+//       setTimeout(() => {
+//         yearModalForm.resetFields();
+//         setAddYearModalStep(1);
+//         setShowAddYearModal(false);
+//       }, 1000);
+//     } catch (error) {
+//       message.error('Failed to add year.');
+//     }
+//   };
+
+//   const handleAddYearModalCancel = () => {
+//     setShowAddYearModal(false);
+//     setAddYearModalStep(1);
+//     yearModalForm.resetFields();
+//   };
+
+//   return (
+//     <Layout style={{ minHeight: '70vh' }}>
+//       <Sider width={300} style={{ background: '#fff', paddingBottom: '24px' }}>
+//         <Spin spinning={loading} style={{ margin: '20px' }}>
+//           <Menu
+//             mode="inline"
+//             selectedKeys={[`${selectedBranch}-${selectedYear}`]}
+//             onClick={handleMenuClick}
+//             style={{ height: 'calc(100% - 50px)', borderRight: 0 }}
+//           >
+//             {branches.map((branchObj) => (
+//               <Menu.SubMenu key={branchObj.branch} title={branchObj.branch}>
+//                 {branchObj.pyqs &&
+//                   Object.keys(branchObj.pyqs).map((year) => (
+//                     <Menu.Item key={`${branchObj.branch}-${year}`}>{year}</Menu.Item>
+//                   ))}
+//                 <Menu.Item key={`${branchObj.branch}-add-year`}>Add Year</Menu.Item>
+//               </Menu.SubMenu>
+//             ))}
+//           </Menu>
+//           <Button
+//             type="dashed"
+//             style={{ width: '90%', margin: '10px' }}
+//             onClick={() => {
+//               setShowAddBranchModal(true);
+//               setModalStep(1);
+//             }}
+//           >
+//             Add Branch
+//           </Button>
+//         </Spin>
+//       </Sider>
+//       <Layout style={{ padding: '24px' }}>
+//         <Content style={{ background: '#fff', padding: 24, minHeight: 280 }}>
+//           <h2>
+//             You are uploading to <strong>{selectedBranch}</strong> year{' '}
+//             <strong>{selectedYear}</strong>
+//           </h2>
+//           <Form
+//             form={subjectForm}
+//             layout="vertical"
+//             onFinish={onFinishSubject}
+//             initialValues={{ by: 'Admin' }}
+//           >
+//             <Form.Item
+//               label="By"
+//               name="by"
+//               rules={[{ required: true, message: 'Please enter the author name' }]}
+//             >
+//               <Input placeholder="Enter author name" />
+//             </Form.Item>
+//             <Form.Item
+//               label="PDF Link"
+//               name="pdf"
+//               rules={[{ required: true, message: 'Please enter the PDF link' }]}
+//             >
+//               <Input placeholder="Enter PDF link" />
+//             </Form.Item>
+//             <Form.Item
+//               label="Subject Code"
+//               name="sub_code"
+//               rules={[{ required: true, message: 'Please enter the subject code' }]}
+//             >
+//               <Input placeholder="Enter subject code" />
+//             </Form.Item>
+//             <Form.Item
+//               label="Subject Name"
+//               name="sub_name"
+//               rules={[{ required: true, message: 'Please enter the subject name' }]}
+//             >
+//               <Input placeholder="Enter subject name" />
+//             </Form.Item>
+//             <Form.Item>
+//               <Button type="primary" htmlType="submit">
+//                 Add Subject Note
+//               </Button>
+//               <Button onClick={onSubjectCancel} style={{ marginLeft: '10px' }}>
+//                 Cancel
+//               </Button>
+//             </Form.Item>
+//           </Form>
+//         </Content>
+//       </Layout>
+
+//       {/* ----------------------- "Add Branch" Modal (Modified) ----------------------- */}
+//       <Modal
+//         open={showAddBranchModal}
+//         title="Add New Branch"
+//         onCancel={handleAddBranchModalCancel}
+//         footer={null}
+//       >
+//         {modalStep === 1 && (
+//           <Form form={branchNameForm} layout="vertical" onFinish={onFinishBranchStep1}>
+//             <Form.Item
+//               label="Branch Name"
+//               name="branchName"
+//               rules={[{ required: true, message: 'Please enter the branch name' }]}
+//             >
+//               <Input placeholder="Enter branch name" />
+//             </Form.Item>
+//             <Form.Item>
+//               <Button type="primary" htmlType="submit">
+//                 Next
+//               </Button>
+//             </Form.Item>
+//           </Form>
+//         )}
+//         {modalStep === 2 && (
+//           <Form form={branchYearForm} layout="vertical" onFinish={onFinishBranchStep2}>
+//             <Form.Item
+//               label="Year"
+//               name="year"
+//               rules={[{ required: true, message: 'Please enter the year' }]}
+//             >
+//               <Input placeholder="Enter year (e.g., 2020-2019)" />
+//             </Form.Item>
+//             <Form.Item>
+//               <Button type="primary" htmlType="submit">
+//                 Next
+//               </Button>
+//             </Form.Item>
+//           </Form>
+//         )}
+//         {modalStep === 3 && (
+//           <Form
+//             form={branchDetailsForm}
+//             layout="vertical"
+//             onFinish={onFinishBranchStep3}
+//             initialValues={{ by: 'Admin' }}
+//           >
+//             <Form.Item
+//               label="By"
+//               name="by"
+//               rules={[{ required: true, message: 'Please enter the author name' }]}
+//             >
+//               <Input placeholder="Enter author name" />
+//             </Form.Item>
+//             <Form.Item
+//               label="PDF Link"
+//               name="pdf"
+//               rules={[{ required: true, message: 'Please enter the PDF link' }]}
+//             >
+//               <Input placeholder="Enter PDF link" />
+//             </Form.Item>
+//             <Form.Item
+//               label="Subject Code"
+//               name="sub_code"
+//               rules={[{ required: true, message: 'Please enter the subject code' }]}
+//             >
+//               <Input placeholder="Enter subject code" />
+//             </Form.Item>
+//             <Form.Item
+//               label="Subject Name"
+//               name="sub_name"
+//               rules={[{ required: true, message: 'Please enter the subject name' }]}
+//             >
+//               <Input placeholder="Enter subject name" />
+//             </Form.Item>
+//             <Form.Item>
+//               <Button type="primary" htmlType="submit">
+//                 Add Branch
+//               </Button>
+//             </Form.Item>
+//           </Form>
+//         )}
+//       </Modal>
+
+//       {/* ----------------------- "Add Year" Modal (Unchanged) ----------------------- */}
+//       <Modal
+//         open={showAddYearModal}
+//         title="Add New Year"
+//         onCancel={handleAddYearModalCancel}
+//         footer={null}
+//       >
+//         {addYearModalStep === 1 && (
+//           <Form form={yearModalForm} layout="vertical" onFinish={onFinishAddYearStep1}>
+//             <Form.Item
+//               label="Year"
+//               name="year"
+//               rules={[{ required: true, message: 'Please enter the year' }]}
+//             >
+//               <Input placeholder="Enter year (e.g., 2022-2023)" />
+//             </Form.Item>
+//             <Form.Item>
+//               <Button type="primary" htmlType="submit">
+//                 Next
+//               </Button>
+//             </Form.Item>
+//           </Form>
+//         )}
+//         {addYearModalStep === 2 && (
+//           <Form
+//             form={yearModalForm}
+//             layout="vertical"
+//             onFinish={onFinishAddYearStep2}
+//             initialValues={{ by: 'Admin' }}
+//           >
+//             <Form.Item
+//               label="By"
+//               name="by"
+//               rules={[{ required: true, message: 'Please enter the author name' }]}
+//             >
+//               <Input placeholder="Enter author name" />
+//             </Form.Item>
+//             <Form.Item
+//               label="PDF Link"
+//               name="pdf"
+//               rules={[{ required: true, message: 'Please enter the PDF link' }]}
+//             >
+//               <Input placeholder="Enter PDF link" />
+//             </Form.Item>
+//             <Form.Item
+//               label="Subject Code"
+//               name="sub_code"
+//               rules={[{ required: true, message: 'Please enter the subject code' }]}
+//             >
+//               <Input placeholder="Enter subject code" />
+//             </Form.Item>
+//             <Form.Item
+//               label="Subject Name"
+//               name="sub_name"
+//               rules={[{ required: true, message: 'Please enter the subject name' }]}
+//             >
+//               <Input placeholder="Enter subject name" />
+//             </Form.Item>
+//             <Form.Item>
+//               <Button type="primary" htmlType="submit">
+//                 Add Year
+//               </Button>
+//             </Form.Item>
+//           </Form>
+//         )}
+//       </Modal>
+
+//       {/* ----------------------- Success Modal for Subject Note Addition ----------------------- */}
+//       <Modal
+//         open={showSubjectSuccessModal}
+//         title="Success"
+//         onOk={() => setShowSubjectSuccessModal(false)}
+//         onCancel={() => setShowSubjectSuccessModal(false)}
+//         footer={[
+//           <Button key="ok" type="primary" onClick={() => setShowSubjectSuccessModal(false)}>
+//             OK
+//           </Button>,
+//         ]}
+//       >
+//         <p>Your subject note has been added successfully!</p>
+//       </Modal>
+//     </Layout>
+//   );
+// };
+
+// export default SecondYearPYQ;
