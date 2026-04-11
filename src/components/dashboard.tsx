@@ -104,7 +104,6 @@ function isRawApiResponse(value: unknown): value is RawApiResponse {
 
 function prettifyNameFromEmail(email?: string | null) {
   if (!email) return "";
-
   const prefix = email.split("@")[0];
   return prefix
     .replace(/[._-]+/g, " ")
@@ -170,22 +169,39 @@ function normalizeDashboardSummary(value: unknown): DashboardSummary | null {
 
   if (!hasBaseShape) return null;
 
+  const v = value as {
+    title: string;
+    headline: string;
+    source: string;
+    pipelineStatus: string;
+    lastSync: string;
+    liveRecords: number;
+    newThisRun: number;
+    published: number;
+    scanned: number;
+    duplicatesSkipped: number;
+    updatedAtIso: string;
+    updatedAtEpochMs: number;
+    runBy?: unknown;
+    technicalDetails?: unknown;
+  };
+
   return {
-    title: value.title as string,
-    headline: value.headline as string,
-    source: value.source as string,
-    pipelineStatus: value.pipelineStatus === "Success" ? "Success" : "Failed",
-    lastSync: value.lastSync as string,
-    liveRecords: value.liveRecords as number,
-    newThisRun: value.newThisRun as number,
-    published: value.published as number,
-    scanned: value.scanned as number,
-    duplicatesSkipped: value.duplicatesSkipped as number,
-    updatedAtIso: value.updatedAtIso as string,
-    updatedAtEpochMs: value.updatedAtEpochMs as number,
-    runBy: normalizeRunBy(value.runBy),
-    technicalDetails: isObject(value.technicalDetails)
-      ? (value.technicalDetails as RawApiResponse)
+    title: v.title,
+    headline: v.headline,
+    source: v.source,
+    pipelineStatus: v.pipelineStatus === "Success" ? "Success" : "Failed",
+    lastSync: v.lastSync,
+    liveRecords: v.liveRecords,
+    newThisRun: v.newThisRun,
+    published: v.published,
+    scanned: v.scanned,
+    duplicatesSkipped: v.duplicatesSkipped,
+    updatedAtIso: v.updatedAtIso,
+    updatedAtEpochMs: v.updatedAtEpochMs,
+    runBy: normalizeRunBy(v.runBy),
+    technicalDetails: isObject(v.technicalDetails)
+      ? (v.technicalDetails as RawApiResponse)
       : {},
   };
 }
@@ -226,17 +242,12 @@ function getPrimaryPlatformStats(payload: RawApiResponse) {
   };
 }
 
-function buildHeadline(title: string, payload: RawApiResponse) {
-  if (!payload.ok) {
-    return `${title} sync failed`;
-  }
+function buildHeadline(payload: RawApiResponse) {
+  if (!payload.ok) return "Sync failed";
 
   const newCount = payload.scrape?.delta_total ?? 0;
-  if (newCount > 0) {
-    return `${title} sync completed — ${newCount} new items added`;
-  }
-
-  return `${title} sync completed — no new items found`;
+  if (newCount > 0) return `${newCount} new items found`;
+  return "No new items found";
 }
 
 function toDashboardSummary(
@@ -249,7 +260,7 @@ function toDashboardSummary(
 
   return {
     title,
-    headline: buildHeadline(title, payload),
+    headline: buildHeadline(payload),
     source: primary?.source ?? payload.scrape?.sources?.[0] ?? "-",
     pipelineStatus: payload.ok ? "Success" : "Failed",
     lastSync: formatSavedFileTimestamp(
@@ -274,6 +285,13 @@ function buildFirebaseRestUrl(baseUrl: string, nodePath: string) {
   return `${cleanBase}/${cleanPath}.json`;
 }
 
+function getRunnerName(runBy?: RunBy | null) {
+  if (!runBy) return "Unknown User";
+  if (runBy.name?.trim()) return runBy.name.trim();
+  if (runBy.email?.trim()) return prettifyNameFromEmail(runBy.email);
+  return "Unknown User";
+}
+
 function getRelativeTime(epochMs?: number) {
   if (!epochMs) return "No recent update";
 
@@ -282,10 +300,10 @@ function getRelativeTime(epochMs?: number) {
   const diffHr = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMin < 1) return "Updated just now";
-  if (diffMin < 60) return `Updated ${diffMin} min ago`;
-  if (diffHr < 24) return `Updated ${diffHr} hr ago`;
-  return `Updated ${diffDay} day${diffDay > 1 ? "s" : ""} ago`;
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHr < 24) return `${diffHr} hr ago`;
+  return `${diffDay} day${diffDay > 1 ? "s" : ""} ago`;
 }
 
 function getFreshnessMeta(epochMs?: number) {
@@ -323,14 +341,6 @@ function getFreshnessMeta(epochMs?: number) {
     label: "Stale",
     className: "border-rose-200 bg-rose-50 text-rose-700",
   };
-}
-
-function formatRunBy(runBy?: RunBy | null) {
-  if (!runBy) return "Unknown User";
-  if (runBy.name && runBy.email) return `${runBy.name} · ${runBy.email}`;
-  if (runBy.name) return runBy.name;
-  if (runBy.email) return runBy.email;
-  return "Unknown User";
 }
 
 async function overwriteLatestHistory(
@@ -388,416 +398,300 @@ async function fetchLatestHistory(
   return normalizeDashboardSummary(payload);
 }
 
-function StatusBadge({ status }: { status: RequestStatus }) {
-  const styles: Record<RequestStatus, string> = {
-    idle: "border-slate-200 bg-white text-slate-600",
-    loading: "border-amber-200 bg-amber-50 text-amber-700",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    error: "border-rose-200 bg-rose-50 text-rose-700",
-  };
-
-  const labels: Record<RequestStatus, string> = {
-    idle: "Idle",
-    loading: "Running",
-    success: "Success",
-    error: "Failed",
-  };
-
+function SmallPill({
+  label,
+  className = "",
+}: {
+  label: string;
+  className?: string;
+}) {
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${styles[status]}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${className}`}
     >
-      <span
-        className={`h-2 w-2 rounded-full ${
-          status === "loading"
-            ? "animate-pulse bg-amber-500"
-            : status === "success"
-            ? "bg-emerald-500"
-            : status === "error"
-            ? "bg-rose-500"
-            : "bg-slate-400"
-        }`}
-      />
-      {labels[status]}
+      {label}
     </span>
   );
 }
 
-function MetricCard({
+function MiniMetric({
   label,
   value,
-  accent,
 }: {
   label: string;
   value: string | number;
-  accent?: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl bg-slate-50 p-3">
       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
         {label}
       </div>
-      <div className={`mt-2 text-2xl font-bold ${accent ?? "text-slate-900"}`}>
-        {value}
-      </div>
+      <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </div>
   );
 }
 
-function LastUpdateHero({
-  opportunitiesSummary,
-  eventsSummary,
+function TopCommandBar({
+  authReady,
+  authUser,
+  totalNew,
 }: {
-  opportunitiesSummary: DashboardSummary | null;
-  eventsSummary: DashboardSummary | null;
+  authReady: boolean;
+  authUser: User | null;
+  totalNew: number;
 }) {
-  const cards = [
-    {
-      key: "opportunities",
-      title: "Opportunities",
-      summary: opportunitiesSummary,
-      gradient: "from-slate-900 to-slate-700",
-      icon: "📈",
-    },
-    {
-      key: "events",
-      title: "Events",
-      summary: eventsSummary,
-      gradient: "from-blue-700 to-indigo-600",
-      icon: "🗓️",
-    },
-  ];
+  const runner = normalizeRunnerFromFirebaseUser(authUser);
 
   return (
-    <section className="mb-8 overflow-hidden rounded-[32px] border border-white/70 bg-white/80 p-6 shadow-xl backdrop-blur">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <section className="mb-6 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <div className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             Latest pipeline snapshot
           </div>
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
             Automation history
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Last saved pipeline outcome with the exact operator identity that triggered the run.
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Compact cards on top, details below.
           </p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        {cards.map(({ key, title, summary, gradient, icon }) => {
-          const freshness = getFreshnessMeta(summary?.updatedAtEpochMs);
-
-          return (
-            <div
-              key={key}
-              className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-3xl bg-gradient-to-br ${gradient} text-2xl text-white shadow-lg`}
-                  >
-                    {icon}
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-slate-900">{title}</div>
-                    <div className="mt-1 text-sm text-slate-500">
-                      {summary?.headline ?? "No update available yet"}
-                    </div>
-                  </div>
-                </div>
-
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${freshness.className}`}
-                >
-                  {freshness.label}
-                </span>
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Last Sync
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900">
-                    {summary?.lastSync ?? "-"}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Status
-                  </div>
-                  <div
-                    className={`mt-1 text-sm font-semibold ${
-                      summary?.pipelineStatus === "Success"
-                        ? "text-emerald-700"
-                        : "text-rose-700"
-                    }`}
-                  >
-                    {summary?.pipelineStatus ?? "-"}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Live Records
-                  </div>
-                  <div className="mt-1 text-lg font-bold text-slate-900">
-                    {summary?.liveRecords ?? "-"}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    New This Run
-                  </div>
-                  <div className="mt-1 text-lg font-bold text-slate-900">
-                    {summary?.newThisRun ?? "-"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-4">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Last Run By
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {formatRunBy(summary?.runBy)}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between text-sm">
-                <div className="text-slate-600">
-                  Source:{" "}
-                  <span className="font-semibold text-slate-900">
-                    {summary?.source ?? "-"}
-                  </span>
-                </div>
-                <div className="text-slate-500">
-                  {getRelativeTime(summary?.updatedAtEpochMs)}
-                </div>
-              </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Logged-in Admin
             </div>
-          );
-        })}
+            <div className="mt-1 text-sm font-semibold text-slate-900">
+              {authReady ? getRunnerName(runner) : "Checking auth session..."}
+            </div>
+          </div>
+
+          <SmallPill
+            label={`Total new this cycle: ${totalNew}`}
+            className="border-blue-200 bg-blue-50 text-blue-700"
+          />
+        </div>
       </div>
     </section>
   );
 }
 
-function SummaryPanel({
-  title,
-  subtitle,
-  endpoint,
+function SnapshotCard({
+  label,
+  emoji,
   state,
-  onRun,
-  buttonClassName,
   buttonLabel,
-  loadingLabel,
+  buttonClassName,
+  onRun,
   authReady,
   authUser,
 }: {
-  title: string;
-  subtitle: string;
-  endpoint: string;
+  label: string;
+  emoji: string;
   state: ApiState;
-  onRun: () => void;
-  buttonClassName: string;
   buttonLabel: string;
-  loadingLabel: string;
+  buttonClassName: string;
+  onRun: () => void;
   authReady: boolean;
   authUser: User | null;
 }) {
-  const freshness = useMemo(
-    () => getFreshnessMeta(state.summary?.updatedAtEpochMs),
-    [state.summary?.updatedAtEpochMs]
-  );
-
-  const buttonDisabled = state.status === "loading" || !authReady || !authUser;
+  const summary = state.summary;
+  const freshness = getFreshnessMeta(summary?.updatedAtEpochMs);
+  const buttonDisabled = !authReady || !authUser || state.status === "loading";
 
   return (
-    <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-lg">
-      <div className="border-b border-slate-200 bg-gradient-to-r from-white to-slate-50 p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
+            {emoji}
+          </div>
           <div>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <StatusBadge status={state.status} />
-              {state.summary && (
-                <span
-                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${freshness.className}`}
-                >
-                  {freshness.label}
-                </span>
-              )}
+            <div className="text-lg font-bold text-slate-900">{label}</div>
+            <div className="mt-1 text-sm text-slate-500">
+              {summary?.headline ?? "No history yet"}
             </div>
-
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              {title}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              {subtitle}
-            </p>
-          </div>
-
-          <button
-            onClick={onRun}
-            disabled={buttonDisabled}
-            className={`rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow transition-all disabled:cursor-not-allowed disabled:opacity-60 ${buttonClassName}`}
-          >
-            {state.status === "loading" ? loadingLabel : buttonLabel}
-          </button>
-        </div>
-
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Configured Endpoint
-          </div>
-          <div className="break-all font-mono text-xs leading-5 text-slate-700">
-            {endpoint || "Not configured"}
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Current Logged-in Admin
-          </div>
-          <div className="mt-1 text-sm font-semibold text-slate-900">
-            {authReady
-              ? authUser
-                ? formatRunBy(normalizeRunnerFromFirebaseUser(authUser))
-                : "No authenticated admin found"
-              : "Checking auth session..."}
-          </div>
-        </div>
+        <button
+          onClick={onRun}
+          disabled={buttonDisabled}
+          className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${buttonClassName}`}
+        >
+          {state.status === "loading" ? "Running..." : buttonLabel}
+        </button>
       </div>
 
-      <div className="p-6">
-        {state.error && (
-          <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-            <div className="mb-1 text-sm font-semibold text-rose-700">
-              Request failed
-            </div>
-            <div className="text-sm leading-6 text-rose-700">{state.error}</div>
-          </div>
-        )}
+      {state.error && (
+        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          {state.error}
+        </div>
+      )}
 
-        {state.dbSyncMessage && (
-          <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-            <div className="text-sm font-medium text-blue-700">
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MiniMetric label="Status" value={summary?.pipelineStatus ?? "-"} />
+        <MiniMetric label="Last Sync" value={summary?.lastSync ?? "-"} />
+        <MiniMetric label="Live" value={summary?.liveRecords ?? "-"} />
+        <MiniMetric label="New" value={summary?.newThisRun ?? "-"} />
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <span>
+          Source:{" "}
+          <span className="font-semibold text-slate-900">
+            {summary?.source ?? "-"}
+          </span>
+        </span>
+
+        <span>
+          Run By:{" "}
+          <span className="font-semibold text-slate-900">
+            {getRunnerName(summary?.runBy)}
+          </span>
+        </span>
+
+        <div className="flex items-center gap-2">
+          <SmallPill label={freshness.label} className={freshness.className} />
+          <span>{getRelativeTime(summary?.updatedAtEpochMs)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailSection({
+  title,
+  endpoint,
+  state,
+}: {
+  title: string;
+  endpoint: string;
+  state: ApiState;
+}) {
+  const summary = state.summary;
+  const primaryPlatformStats = summary?.technicalDetails
+    ? getPrimaryPlatformStats(summary.technicalDetails)?.stats
+    : undefined;
+
+  const freshness = useMemo(
+    () => getFreshnessMeta(summary?.updatedAtEpochMs),
+    [summary?.updatedAtEpochMs]
+  );
+
+  return (
+    <section className="h-full rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+
+            <SmallPill
+              label={
+                state.status === "loading"
+                  ? "Running"
+                  : state.status === "error"
+                  ? "Failed"
+                  : "Idle"
+              }
+              className="border-slate-200 bg-slate-50 text-slate-700"
+            />
+
+            <SmallPill label={freshness.label} className={freshness.className} />
+          </div>
+
+          <div className="mt-2 text-sm text-slate-500">
+            {summary?.headline ?? "No data available yet"}
+          </div>
+
+          {state.dbSyncMessage && (
+            <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
               {state.dbSyncMessage}
             </div>
-          </div>
-        )}
+          )}
 
-        {!state.initialHistoryLoaded && state.status === "idle" && (
-          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 text-center">
-            <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700" />
-            <h3 className="text-base font-semibold text-slate-800">
-              Loading latest history
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Fetching the most recent update snapshot from Firebase.
-            </p>
-          </div>
-        )}
-
-        {state.initialHistoryLoaded && state.status === "idle" && state.summary === null && !state.error && (
-          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
-            <div className="mb-4 rounded-2xl bg-slate-200 px-4 py-3 text-xl font-bold text-slate-700">
-              {title.charAt(0)}
+          {state.error && (
+            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {state.error}
             </div>
-            <h3 className="text-base font-semibold text-slate-800">
-              No previous update found
-            </h3>
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              Trigger the pipeline once and the latest snapshot will be stored in Firebase.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
 
-        {state.status === "loading" && (
-          <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 text-center">
-            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-700" />
-            <h3 className="text-base font-semibold text-slate-800">
-              Request in progress
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Fetching latest pipeline metrics and syncing latest history node.
-            </p>
-          </div>
-        )}
-
-        {state.summary !== null && state.status !== "loading" && (
-          <>
-            <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm font-semibold text-slate-900">
-                  {state.summary.headline}
-                </div>
-                <div className="text-sm text-slate-500">
-                  {getRelativeTime(state.summary.updatedAtEpochMs)}
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                <span>
-                  Source:{" "}
-                  <span className="font-semibold text-slate-800">
-                    {state.summary.source}
-                  </span>
-                </span>
-                <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-                  Last sync: {state.summary.lastSync}
-                </span>
-                <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-                  Run by: {formatRunBy(state.summary.runBy)}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricCard
-                label="Pipeline Status"
-                value={state.summary.pipelineStatus}
-                accent={
-                  state.summary.pipelineStatus === "Success"
-                    ? "text-emerald-700"
-                    : "text-rose-700"
-                }
-              />
-              <MetricCard label="Last Sync" value={state.summary.lastSync} />
-              <MetricCard label="Live Records" value={state.summary.liveRecords} />
-              <MetricCard label="New This Run" value={state.summary.newThisRun} />
-              <MetricCard label="Published" value={state.summary.published} />
-              <MetricCard label="Scanned" value={state.summary.scanned} />
-              <MetricCard
-                label="Duplicates Skipped"
-                value={state.summary.duplicatesSkipped}
-              />
-              <MetricCard label="Run By" value={formatRunBy(state.summary.runBy)} />
-            </div>
-
-            <details className="mt-6 rounded-2xl border border-slate-200 bg-slate-50">
-              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-800">
-                Technical details
-              </summary>
-              <div className="border-t border-slate-200 px-4 py-4">
-                <pre className="max-h-[360px] overflow-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-slate-200">
-                  {typeof state.rawData === "string"
-                    ? state.rawData
-                    : JSON.stringify(
-                        state.rawData ?? state.summary.technicalDetails,
-                        null,
-                        2
-                      )}
-                </pre>
-              </div>
-            </details>
-          </>
-        )}
+        <div className="text-sm text-slate-500">
+          {getRelativeTime(summary?.updatedAtEpochMs)}
+        </div>
       </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <MiniMetric label="Published" value={summary?.published ?? "-"} />
+        <MiniMetric label="Scanned" value={summary?.scanned ?? "-"} />
+        <MiniMetric label="Duplicates" value={summary?.duplicatesSkipped ?? "-"} />
+        <MiniMetric
+          label="Pages Fetched"
+          value={primaryPlatformStats?.pages_fetched ?? "-"}
+        />
+        <MiniMetric
+          label="Early Stop Page"
+          value={primaryPlatformStats?.early_stop_all_seen_page ?? "-"}
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Source
+          </div>
+          <div className="mt-1 text-sm font-semibold text-slate-900">
+            {summary?.source ?? "-"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Last Sync
+          </div>
+          <div className="mt-1 text-sm font-semibold text-slate-900">
+            {summary?.lastSync ?? "-"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Run By
+          </div>
+          <div className="mt-1 text-sm font-semibold text-slate-900">
+            {getRunnerName(summary?.runBy)}
+          </div>
+        </div>
+      </div>
+
+      <details className="mt-4 rounded-2xl border border-slate-200 bg-slate-50">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-800">
+          Technical details
+        </summary>
+
+        <div className="border-t border-slate-200 px-4 py-4">
+          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Endpoint
+            </div>
+            <div className="mt-1 break-all font-mono text-xs text-slate-700">
+              {endpoint || "Not configured"}
+            </div>
+          </div>
+
+          <pre className="max-h-[360px] overflow-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-slate-200">
+            {typeof state.rawData === "string"
+              ? state.rawData
+              : JSON.stringify(
+                  state.rawData ?? summary?.technicalDetails ?? {},
+                  null,
+                  2
+                )}
+          </pre>
+        </div>
+      </details>
     </section>
   );
 }
@@ -914,12 +808,6 @@ export default function ScraperDashboard() {
       const runBy = normalizeRunnerFromFirebaseUser(authUser);
       const summary = toDashboardSummary(title, payload, runBy);
 
-      console.log("WRITING HISTORY NODE", {
-        historyNode,
-        title,
-        runBy,
-      });
-
       await overwriteLatestHistory(historyNode, summary);
 
       setState({
@@ -941,20 +829,30 @@ export default function ScraperDashboard() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_28%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <LastUpdateHero
-          opportunitiesSummary={opportunitiesState.summary}
-          eventsSummary={eventsState.summary}
-        />
+  // const totalNew =
+  //   (opportunitiesState.summary?.newThisRun ?? 0) +
+  //   (eventsState.summary?.newThisRun ?? 0);
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <SummaryPanel
-            title="Opportunities Automation"
-            subtitle="Run the opportunities pipeline, surface the important metrics, and persist the latest execution snapshot with the actual Firebase admin who triggered it."
-            endpoint={OPPORTUNITIES_API_URL}
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.08),_transparent_28%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff)] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        {/* <TopCommandBar
+          authReady={authReady}
+          authUser={authUser}
+          totalNew={totalNew}
+        /> */}
+
+        <div className="mb-4 text-sm text-slate-600">
+          Overview of the latest saved execution state
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <SnapshotCard
+            label="Opportunities"
+            emoji="📈"
             state={opportunitiesState}
+            buttonLabel="Run Opportunities"
+            buttonClassName="bg-slate-900 hover:bg-slate-800"
             authReady={authReady}
             authUser={authUser}
             onRun={() =>
@@ -965,16 +863,14 @@ export default function ScraperDashboard() {
                 setOpportunitiesState
               )
             }
-            buttonClassName="bg-slate-900 hover:bg-slate-800"
-            buttonLabel="Run Opportunities API"
-            loadingLabel="Running Opportunities..."
           />
 
-          <SummaryPanel
-            title="Events Automation"
-            subtitle="Run the events pipeline, show the latest metrics, and persist the last run operator identity exactly once at execution time."
-            endpoint={EVENTS_API_URL}
+          <SnapshotCard
+            label="Events"
+            emoji="🗓️"
             state={eventsState}
+            buttonLabel="Run Events"
+            buttonClassName="bg-blue-700 hover:bg-blue-600"
             authReady={authReady}
             authUser={authUser}
             onRun={() =>
@@ -985,9 +881,20 @@ export default function ScraperDashboard() {
                 setEventsState
               )
             }
-            buttonClassName="bg-blue-700 hover:bg-blue-600"
-            buttonLabel="Run Events API"
-            loadingLabel="Running Events..."
+          />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
+          <DetailSection
+            title="Opportunities details"
+            endpoint={OPPORTUNITIES_API_URL}
+            state={opportunitiesState}
+          />
+
+          <DetailSection
+            title="Events details"
+            endpoint={EVENTS_API_URL}
+            state={eventsState}
           />
         </div>
       </div>
