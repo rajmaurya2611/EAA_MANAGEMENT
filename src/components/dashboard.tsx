@@ -843,7 +843,7 @@ export default function ScraperDashboard() {
         /> */}
 
         <div className="mb-4 text-sm text-slate-600">
-          Overview of the latest saved execution state
+          Last Execution Details
         </div>
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
