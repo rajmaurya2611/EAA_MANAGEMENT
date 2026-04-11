@@ -431,51 +431,6 @@ function MiniMetric({
   );
 }
 
-function TopCommandBar({
-  authReady,
-  authUser,
-  totalNew,
-}: {
-  authReady: boolean;
-  authUser: User | null;
-  totalNew: number;
-}) {
-  const runner = normalizeRunnerFromFirebaseUser(authUser);
-
-  return (
-    <section className="mb-6 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Latest pipeline snapshot
-          </div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-            Automation history
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Compact cards on top, details below.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Logged-in Admin
-            </div>
-            <div className="mt-1 text-sm font-semibold text-slate-900">
-              {authReady ? getRunnerName(runner) : "Checking auth session..."}
-            </div>
-          </div>
-
-          <SmallPill
-            label={`Total new this cycle: ${totalNew}`}
-            className="border-blue-200 bg-blue-50 text-blue-700"
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function SnapshotCard({
   label,
