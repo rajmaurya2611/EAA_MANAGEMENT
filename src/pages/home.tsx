@@ -7,6 +7,7 @@ import {
   AppstoreOutlined,
   PlusOutlined,
   EditOutlined,
+  SettingFilled,
 } from '@ant-design/icons';
 import { Layout, Menu, theme } from 'antd';
 import Dashboard from '../components/dashboard';
@@ -46,6 +47,11 @@ import ManageLectures from '../components/VideoLectures/ManageVideoLectures';
 import UserRequestedLectures from '../components/UserRequests/UserRequestedVideoLectures';
 import UserFeedbacks from '../components/Feedback/Feedback';
 import UserRequestedEBooks from '../components/UserRequests/UserRequestedEBooks';
+import AdsMainPage from '../components/Advertisements/ads_main_page';
+import InterviewQuestionsAdmin from '../components/New_Interview_Module/interview_questions';
+import PublishedRequestsAdmin from '../components/UserRequests/PublishedRequestsAdmin';
+import UserRequestsAdmin from '../components/UserRequests/Userrequestsadmin';
+import MaterialsAdmin from '../components/MaterialV2/MaterialsAdmin';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -93,6 +99,12 @@ const Home: React.FC = () => {
       label: 'Materials',
       icon: <AppstoreOutlined />,
       children: [
+        {
+          key: 'materialV2',
+          label: 'New Materials Upload',
+          icon: <FileTextOutlined />,
+          
+        },
         {
           key: 'notes',
           label: 'Notes',
@@ -173,6 +185,8 @@ const Home: React.FC = () => {
         { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
         { key: 'userReqLectures', label: 'Lectures', icon: <AppstoreOutlined /> },
         { key: 'userReqEBooks', label: 'E-Books', icon: <AppstoreOutlined /> },
+        { key: 'publishesReqAll', label: 'Published Requests', icon: <AppstoreOutlined /> },
+        { key: 'userRequestAll', label: 'All User Requests', icon: <AppstoreOutlined /> },
       ],
     },
     {
@@ -187,6 +201,22 @@ const Home: React.FC = () => {
         { key: 'opportunities', label: 'Opportunities', icon: <AppstoreAddOutlined /> },
       ],
     },
+    {
+      key: 'advertisement',
+      label: 'Advertisement',
+      icon: <VideoCameraOutlined />,
+      children: [
+        { key: 'ads_main_page', label: 'Ads Main Page', icon: <SettingFilled /> },
+      ],
+    }, {
+      key: 'interview_questions_module',
+      label: 'Interview Questions',
+      icon: <VideoCameraOutlined />,
+      children: [
+        { key: 'int_ques_module', label: 'Interview Questions', icon: <SettingFilled /> },
+      ],
+    },
+
   ];
 
   const handleMenuClick = (key: string) => {
@@ -261,42 +291,47 @@ const Home: React.FC = () => {
             }}
           >
             {activeView === 'dashboard' && <Dashboard />}
-            {activeView === 'usersV12' && <UsersVersion12/>}
-            {activeView === 'usersOld' && <UsersOld/>}
+            {activeView === 'usersV12' && <UsersVersion12 />}
+            {activeView === 'usersOld' && <UsersOld />}
             {activeView === 'carousel' && <Carousel />}
-            {activeView === 'notesNew' && <NewNotes />}
-            {activeView === 'notesManage' && <ManageNotes />}
-            {activeView === 'quantumNew' && <NewQuantums />}
+            {/* {activeView === 'notesNew' && <NewNotes />} */}
+            {activeView === 'materialV2' && <MaterialsAdmin />}
+            {/* {activeView === 'notesManage' && <ManageNotes />} */}
+            {/* {activeView === 'quantumNew' && <NewQuantums />}
             {activeView === 'quantumManage' && <ManageQuantum />}
             {activeView === 'pyqNew' && <NewPYQ />}
             {activeView === 'pyqManage' && <ManagePYQs />}
             {activeView === 'syllabusNew' && <NewSyllabus />}
             {activeView === 'syllabusManage' && <ManageSyllabus />}
             {activeView === 'booksNew' && <NewEBooks />}
-            {activeView === 'booksManage' && <ManageEBooks/>}
+            {activeView === 'booksManage' && <ManageEBooks />}
             {activeView === 'lecturesNew' && <NewLectures />}
-            {activeView === 'lecturesManage' && <ManageLectures/>}
+            {activeView === 'lecturesManage' && <ManageLectures />} */}
             {activeView === 'userReqNotes' && <UserRequestedNotes />}
             {activeView === 'userReqPYQs' && <UserRequestedPYQs />}
             {activeView === 'userReqQuantum' && <UserRequestedQuantums />}
             {activeView === 'userReqRoadmaps' && <UserRequestedRoadmaps />}
             {activeView === 'userReqSyllabus' && <UserRequestedSyllabus />}
             {activeView === 'userReqLectures' && <UserRequestedLectures />}
-            {activeView === 'userReqEBooks' && <UserRequestedEBooks/>}
-            {activeView === 'aptitude_practice' && <AptitudePractice/>}
-            {activeView === 'interview_questions' && <InterviewQuestions/>}
-            {activeView === 'roadmap' && <Roadmap/>}
-            {activeView === 'placement_notes' && <PlacementNotes/>}
-            {activeView === 'opportunities' && <Opportunities/>}
-            {activeView === 'infoCards' && <InfoCards/>}
-            {activeView === 'events' && <Events/>}
-            {activeView === 'jointeamappliactions' && <JoinTeamApplications/>}
-            {activeView === 'userContributedNotes' && <ManageUserContributedNotes/>}
-            {activeView === 'userContributedEbooks' && <ManageUserContributedEbooks/>}
-            {activeView === 'userContributedQuantum' && <ManageUserContributedQuantums/>}
-            {activeView === 'userContributedPYQs' && <ManageUserContributedPyqs/>}
-            {activeView === 'userContributedSyllabus' && <ManageUserContributedSyllabus/>}
-            {activeView === 'userFeedback' && <UserFeedbacks/>}
+            {activeView === 'userReqEBooks' && <UserRequestedEBooks />}
+            {activeView === 'aptitude_practice' && <AptitudePractice />}
+            {activeView === 'interview_questions' && <InterviewQuestions />}
+            {activeView === 'roadmap' && <Roadmap />}
+            {activeView === 'placement_notes' && <PlacementNotes />}
+            {activeView === 'opportunities' && <Opportunities />}
+            {activeView === 'infoCards' && <InfoCards />}
+            {activeView === 'events' && <Events />}
+            {activeView === 'jointeamappliactions' && <JoinTeamApplications />}
+            {activeView === 'userContributedNotes' && <ManageUserContributedNotes />}
+            {activeView === 'userContributedEbooks' && <ManageUserContributedEbooks />}
+            {activeView === 'userContributedQuantum' && <ManageUserContributedQuantums />}
+            {activeView === 'userContributedPYQs' && <ManageUserContributedPyqs />}
+            {activeView === 'userContributedSyllabus' && <ManageUserContributedSyllabus />}
+            {activeView === 'userFeedback' && <UserFeedbacks />}
+            {activeView === 'ads_main_page' && <AdsMainPage />}
+            {activeView === 'int_ques_module' && <InterviewQuestionsAdmin />}
+            {activeView === 'publishesReqAll' && <PublishedRequestsAdmin />}
+            {activeView === 'userRequestAll' && <UserRequestsAdmin />}
           </div>
         </Content>
       </Layout>

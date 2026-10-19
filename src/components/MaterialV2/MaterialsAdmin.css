@@ -1,0 +1,319 @@
+/* Engineers At AKTU — Study Material Admin UI */
+.materials-admin-shell {
+  --ma-accent: #635bff;
+  --ma-accent-soft: rgba(99, 91, 255, .10);
+  --ma-page: #f5f7fc;
+  --ma-panel: #ffffff;
+  --ma-border: #e6eaf2;
+  --ma-text: #182230;
+  --ma-muted: #697586;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--ma-text);
+  background:
+    radial-gradient(ellipse at 4% 0%, rgba(99, 91, 255, .09), transparent 32rem),
+    var(--ma-page);
+  transition: background .2s ease, color .2s ease;
+}
+.materials-admin-shell[data-theme="dark"] {
+  --ma-accent: #a29bff;
+  --ma-accent-soft: rgba(162, 155, 255, .14);
+  --ma-page: #10131b;
+  --ma-panel: #191e29;
+  --ma-border: #2b3342;
+  --ma-text: #edf0f7;
+  --ma-muted: #a1aabd;
+  background:
+    radial-gradient(ellipse at 4% 0%, rgba(99, 91, 255, .18), transparent 32rem),
+    var(--ma-page);
+}
+.materials-admin-shell *,
+.materials-admin-shell *::before,
+.materials-admin-shell *::after { box-sizing: border-box; }
+.materials-admin-shell .ant-card {
+  background: var(--ma-panel);
+  border: 1px solid var(--ma-border);
+  box-shadow: 0 8px 28px rgba(20, 32, 60, .045);
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.materials-admin-shell .ant-card:hover {
+  box-shadow: 0 12px 34px rgba(20, 32, 60, .065);
+}
+.materials-admin-shell[data-theme="dark"] .ant-card {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .12);
+}
+.materials-admin-shell .materials-folder-card {
+  border-radius: 14px;
+}
+.materials-admin-shell .materials-folder-card .ant-card-head {
+  min-height: 44px;
+  padding-inline: 12px;
+  border-bottom: 1px solid var(--ma-border);
+}
+.materials-admin-shell .materials-folder-card .ant-card-head-title {
+  padding-block: 10px;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+.materials-admin-shell .materials-folder-card .ant-card-body {
+  padding: 8px !important;
+  overflow: hidden;
+}
+/* Let deeply nested folders extend horizontally and scroll instead of clipping. */
+.materials-admin-shell .materials-folder-tree-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ma-border) transparent;
+  padding-bottom: 4px;
+}
+.materials-admin-shell .materials-folder-tree-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.materials-admin-shell .materials-folder-tree-scroll::-webkit-scrollbar-thumb {
+  background: var(--ma-border);
+  border-radius: 8px;
+}
+/* Keep folder icon, label and count on one compact row. */
+.materials-admin-shell .materials-folder-tree-scroll .ant-tree {
+  width: max-content;
+  min-width: 100%;
+}
+.materials-admin-shell .materials-folder-tree-scroll .ant-tree .ant-tree-treenode {
+  width: max-content;
+  min-width: 100%;
+  padding: 0 !important;
+  align-items: center;
+}
+.materials-admin-shell .ant-tree .ant-tree-indent {
+  flex-shrink: 0;
+}
+.materials-admin-shell .ant-tree .ant-tree-iconEle {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 26px;
+  line-height: 26px;
+  margin-inline-end: 2px;
+  text-align: center;
+}
+.materials-admin-shell .ant-tree .ant-tree-node-content-wrapper {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 150px;
+  min-height: 28px;
+  padding: 3px 6px;
+  line-height: 20px;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.materials-admin-shell .ant-tree .ant-tree-title {
+  display: block;
+  width: max-content;
+  min-width: 150px;
+  overflow: visible;
+}
+.materials-admin-shell .ant-tree .ant-tree-switcher {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 28px;
+  line-height: 28px;
+}
+.materials-admin-shell .materials-content-card {
+  border-radius: 20px;
+  overflow: hidden;
+}
+.materials-admin-shell .materials-page-header {
+  padding: 22px 24px;
+  border: 1px solid var(--ma-border);
+  border-radius: 20px;
+  background: linear-gradient(125deg, var(--ma-panel), color-mix(in srgb, var(--ma-panel) 82%, var(--ma-accent) 18%));
+  box-shadow: 0 8px 26px rgba(20, 32, 60, .035);
+}
+.materials-admin-shell .materials-page-header h3.ant-typography {
+  font-size: clamp(24px, 2.3vw, 32px);
+  letter-spacing: -.045em;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 10px !important;
+}
+.materials-admin-shell .ant-breadcrumb {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.materials-admin-shell .ant-breadcrumb a { color: var(--ma-accent); }
+.materials-admin-shell .ant-btn {
+  box-shadow: none;
+  font-weight: 600;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.materials-admin-shell .ant-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.materials-admin-shell .ant-btn-primary {
+  box-shadow: 0 5px 14px rgba(99, 91, 255, .2);
+}
+.materials-admin-shell .materials-theme-toggle {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ma-accent);
+  background: var(--ma-accent-soft);
+  border-color: transparent;
+}
+.materials-admin-shell .ant-input,
+.materials-admin-shell .ant-input-affix-wrapper,
+.materials-admin-shell .ant-select-selector,
+.materials-admin-shell .ant-select .ant-select-selector {
+  border-radius: 10px !important;
+}
+.materials-admin-shell .ant-input-affix-wrapper:focus,
+.materials-admin-shell .ant-input-affix-wrapper-focused,
+.materials-admin-shell .ant-input:focus,
+.materials-admin-shell .ant-select-focused .ant-select-selector {
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, .12) !important;
+}
+.materials-admin-shell .ant-input-search .ant-input-group-addon .ant-btn {
+  border-radius: 0 10px 10px 0 !important;
+}
+.materials-admin-shell .ant-segmented {
+  border-radius: 11px;
+  padding: 4px;
+  background: var(--ma-page);
+}
+.materials-admin-shell .ant-segmented-item {
+  border-radius: 8px;
+  font-weight: 600;
+}
+.materials-admin-shell .ant-table-wrapper {
+  border: 1px solid var(--ma-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.materials-admin-shell .ant-table {
+  background: transparent;
+}
+.materials-admin-shell .ant-table-thead > tr > th {
+  padding-top: 15px;
+  padding-bottom: 15px;
+  background: var(--ma-page);
+  color: var(--ma-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .065em;
+  text-transform: uppercase;
+  border-bottom-color: var(--ma-border);
+}
+.materials-admin-shell .ant-table-tbody > tr > td {
+  padding-top: 15px;
+  padding-bottom: 15px;
+  border-bottom-color: var(--ma-border);
+}
+.materials-admin-shell .ant-table-tbody > tr:hover > td {
+  background: var(--ma-accent-soft) !important;
+}
+.materials-admin-shell .ant-table-cell-fix-right {
+  background: var(--ma-panel);
+}
+.materials-admin-shell .ant-table-selection-column { padding-inline: 14px !important; }
+.materials-admin-shell .ant-tree {
+  background: transparent;
+}
+.materials-admin-shell .ant-tree .ant-tree-node-content-wrapper:hover {
+  background: var(--ma-accent-soft);
+}
+.materials-admin-shell .ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected {
+  color: var(--ma-accent);
+  background: var(--ma-accent-soft);
+  font-weight: 700;
+}
+.materials-admin-shell .ant-tag {
+  border-radius: 7px;
+  font-weight: 600;
+  padding-inline: 8px;
+}
+.materials-admin-shell .ant-pagination .ant-pagination-item {
+  border-radius: 8px;
+}
+.materials-admin-shell .ant-alert {
+  border-radius: 12px;
+}
+.materials-admin-shell .ant-upload-wrapper .ant-upload-drag {
+  border-radius: 14px;
+  border-width: 1.5px;
+}
+.materials-admin-shell .ant-drawer .ant-drawer-header,
+.materials-admin-shell .ant-modal .ant-modal-header {
+  border-bottom-color: var(--ma-border);
+}
+.materials-admin-shell .ant-drawer .ant-drawer-footer {
+  border-top-color: var(--ma-border);
+}
+.materials-admin-shell .ant-form-item-label > label {
+  font-weight: 650;
+}
+@media (max-width: 991px) {
+  .materials-admin-shell { gap: 14px !important; }
+  .materials-admin-shell .materials-page-header { padding: 18px; }
+  .materials-admin-shell .materials-page-header h3.ant-typography { font-size: 25px; }
+  .materials-admin-shell .materials-content-card .ant-card-body { padding: 14px !important; }
+}
+@media (max-width: 767px) {
+  .materials-admin-shell { padding: 12px !important; }
+  .materials-admin-shell .materials-page-header {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 14px !important;
+  }
+  .materials-admin-shell .materials-page-header > div:last-child {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+  }
+  .materials-admin-shell .materials-page-header > div:last-child .ant-space-item {
+    max-width: 100%;
+  }
+  .materials-admin-shell .materials-page-header > div:last-child .ant-btn {
+    min-height: 38px;
+  }
+  .materials-admin-shell .materials-page-header > div:last-child .ant-btn-primary {
+    flex: 1;
+  }
+  .materials-admin-shell .materials-content-card { border-radius: 15px; }
+  .materials-admin-shell .materials-content-card .ant-card-body { padding: 10px !important; }
+  .materials-admin-shell .ant-table-wrapper { border-radius: 10px; }
+  .materials-admin-shell .ant-table-thead > tr > th,
+  .materials-admin-shell .ant-table-tbody > tr > td { padding: 11px 10px; }
+  .materials-admin-shell .ant-pagination { display: flex; flex-wrap: wrap; gap: 4px; }
+  .materials-admin-shell .ant-pagination-options { margin-inline-start: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .materials-admin-shell, .materials-admin-shell * { transition: none !important; }
+}
+
+@media (max-width: 767px) {
+  .materials-admin-shell .ant-drawer .ant-drawer-body { padding: 10px; }
+}
+
+/* Compact nested folder indentation without removing hierarchy. */
+.materials-admin-shell .materials-folder-tree-scroll .ant-tree-indent-unit {
+  width: 14px !important;
+}
+.materials-admin-shell .materials-folder-tree-scroll .ant-tree-switcher {
+  flex-basis: 18px;
+  width: 18px;
+}
+.materials-admin-shell .materials-folder-tree-scroll .ant-tree-iconEle {
+  flex-basis: 18px;
+  width: 18px;
+  margin-inline-end: 1px;
+}

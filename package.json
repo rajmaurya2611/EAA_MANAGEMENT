@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-react": "^11.2.0",
     "@types/lodash": "^4.17.16",
     "@types/moment": "^2.11.29",
     "antd": "^5.24.3",
+    "ckeditor5": "^48.4.0",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
     "firebase": "^11.4.0",
@@ -21,6 +23,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0",
+    "recharts": "^3.10.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
