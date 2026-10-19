@@ -5,8 +5,6 @@ import {
   AppstoreAddOutlined,
   FileTextOutlined,
   AppstoreOutlined,
-  PlusOutlined,
-  EditOutlined,
   SettingFilled,
 } from '@ant-design/icons';
 import { Layout, Menu, theme } from 'antd';
@@ -103,62 +101,63 @@ const Home: React.FC = () => {
           key: 'materialV2',
           label: 'New Materials Upload',
           icon: <FileTextOutlined />,
-          
-        },
-        {
-          key: 'notes',
-          label: 'Notes',
-          icon: <FileTextOutlined />,
-          children: [
-            { key: 'notesNew', label: 'New', icon: <PlusOutlined /> },
-            { key: 'notesManage', label: 'Manage', icon: <EditOutlined /> },
-          ],
-        },
-        {
-          key: 'quantum',
-          label: 'Quantum',
-          icon: <AppstoreOutlined />,
-          children: [
-            { key: 'quantumNew', label: 'New', icon: <PlusOutlined /> },
-            { key: 'quantumManage', label: 'Manage', icon: <EditOutlined /> },
-          ],
-        },
-        {
-          key: 'pyqs',
-          label: 'PYQs',
-          icon: <AppstoreOutlined />,
-          children: [
-            { key: 'pyqNew', label: 'New', icon: <PlusOutlined /> },
-            { key: 'pyqManage', label: 'Manage', icon: <EditOutlined /> },
-          ],
-        },
-        {
-          key: 'syllabus',
-          label: 'Syllabus',
-          icon: <AppstoreOutlined />,
-          children: [
-            { key: 'syllabusNew', label: 'New', icon: <PlusOutlined /> },
-            { key: 'syllabusManage', label: 'Manage', icon: <EditOutlined /> },
-          ],
-        },
-        {
-          key: 'E-book',
-          label: 'E-Books',
-          icon: <FileTextOutlined />,
-          children: [
-            { key: 'booksNew', label: 'New', icon: <PlusOutlined /> },
-            { key: 'booksManage', label: 'Manage', icon: <EditOutlined /> },
-          ],
-        },
-        {
-          key: 'lectures',
-          label: 'Lectures',
-          icon: <FileTextOutlined />,
-          children: [
-            { key: 'lecturesNew', label: 'New', icon: <PlusOutlined /> },
-            { key: 'lecturesManage', label: 'Manage', icon: <EditOutlined /> },
-          ],
-        },
+
+        }
+
+        // {
+        //   key: 'notes',
+        //   label: 'Notes',
+        //   icon: <FileTextOutlined />,
+        //   children: [
+        //     { key: 'notesNew', label: 'New', icon: <PlusOutlined /> },
+        //     { key: 'notesManage', label: 'Manage', icon: <EditOutlined /> },
+        //   ],
+        // },
+        // {
+        //   key: 'quantum',
+        //   label: 'Quantum',
+        //   icon: <AppstoreOutlined />,
+        //   children: [
+        //     { key: 'quantumNew', label: 'New', icon: <PlusOutlined /> },
+        //     { key: 'quantumManage', label: 'Manage', icon: <EditOutlined /> },
+        //   ],
+        // },
+        // {
+        //   key: 'pyqs',
+        //   label: 'PYQs',
+        //   icon: <AppstoreOutlined />,
+        //   children: [
+        //     { key: 'pyqNew', label: 'New', icon: <PlusOutlined /> },
+        //     { key: 'pyqManage', label: 'Manage', icon: <EditOutlined /> },
+        //   ],
+        // },
+        // {
+        //   key: 'syllabus',
+        //   label: 'Syllabus',
+        //   icon: <AppstoreOutlined />,
+        //   children: [
+        //     { key: 'syllabusNew', label: 'New', icon: <PlusOutlined /> },
+        //     { key: 'syllabusManage', label: 'Manage', icon: <EditOutlined /> },
+        //   ],
+        // },
+        // {
+        //   key: 'E-book',
+        //   label: 'E-Books',
+        //   icon: <FileTextOutlined />,
+        //   children: [
+        //     { key: 'booksNew', label: 'New', icon: <PlusOutlined /> },
+        //     { key: 'booksManage', label: 'Manage', icon: <EditOutlined /> },
+        //   ],
+        // },
+        // {
+        //   key: 'lectures',
+        //   label: 'Lectures',
+        //   icon: <FileTextOutlined />,
+        //   children: [
+        //     { key: 'lecturesNew', label: 'New', icon: <PlusOutlined /> },
+        //     { key: 'lecturesManage', label: 'Manage', icon: <EditOutlined /> },
+        //   ],
+        // },
       ],
     },
     {
@@ -178,15 +177,16 @@ const Home: React.FC = () => {
       label: 'User Requests',
       icon: <UserOutlined />,
       children: [
-        { key: 'userReqNotes', label: 'Notes', icon: <FileTextOutlined /> },
-        { key: 'userReqPYQs', label: 'PYQs', icon: <AppstoreOutlined /> },
-        { key: 'userReqQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
-        { key: 'userReqRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
-        { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
-        { key: 'userReqLectures', label: 'Lectures', icon: <AppstoreOutlined /> },
-        { key: 'userReqEBooks', label: 'E-Books', icon: <AppstoreOutlined /> },
-        { key: 'publishesReqAll', label: 'Published Requests', icon: <AppstoreOutlined /> },
+        // { key: 'userReqNotes', label: 'Notes', icon: <FileTextOutlined /> },
+        // { key: 'userReqPYQs', label: 'PYQs', icon: <AppstoreOutlined /> },
+        // { key: 'userReqQuantum', label: 'Quantum', icon: <AppstoreOutlined /> },
+        // { key: 'userReqRoadmaps', label: 'Roadmaps', icon: <AppstoreOutlined /> },
+        // { key: 'userReqSyllabus', label: 'Syllabus', icon: <AppstoreOutlined /> },
+        // { key: 'userReqLectures', label: 'Lectures', icon: <AppstoreOutlined /> },
+        // { key: 'userReqEBooks', label: 'E-Books', icon: <AppstoreOutlined /> },
+
         { key: 'userRequestAll', label: 'All User Requests', icon: <AppstoreOutlined /> },
+        { key: 'publishesReqAll', label: 'Published Requests', icon: <AppstoreOutlined /> },
       ],
     },
     {
@@ -195,7 +195,7 @@ const Home: React.FC = () => {
       icon: <VideoCameraOutlined />,
       children: [
         { key: 'aptitude_practice', label: 'Aptitude Practice', icon: <AppstoreAddOutlined /> },
-        { key: 'interview_questions', label: 'Interview Questions', icon: <AppstoreAddOutlined /> },
+         { key: 'int_ques_module', label: 'Interview Questions', icon: <SettingFilled /> },
         { key: 'roadmap', label: 'Roadmap', icon: <AppstoreAddOutlined /> },
         { key: 'placement_notes', label: 'Placement Notes', icon: <AppstoreAddOutlined /> },
         { key: 'opportunities', label: 'Opportunities', icon: <AppstoreAddOutlined /> },
@@ -208,14 +208,7 @@ const Home: React.FC = () => {
       children: [
         { key: 'ads_main_page', label: 'Ads Main Page', icon: <SettingFilled /> },
       ],
-    }, {
-      key: 'interview_questions_module',
-      label: 'Interview Questions',
-      icon: <VideoCameraOutlined />,
-      children: [
-        { key: 'int_ques_module', label: 'Interview Questions', icon: <SettingFilled /> },
-      ],
-    },
+    }, 
 
   ];
 
