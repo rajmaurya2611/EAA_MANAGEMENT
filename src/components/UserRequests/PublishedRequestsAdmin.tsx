@@ -93,7 +93,7 @@ function encryptAES(plain: string, key: string): string {
 
 const PUBLISHED_REQUESTS_ROOT = 'version12/PublishedRequests';
 
-const MATERIALS_ROOT = 'version12/Materials';
+// const MATERIALS_ROOT = 'version12/Materials';
 
 const USERS_ROOT = 'version12/users';
 
