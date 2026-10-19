@@ -25,6 +25,30 @@ import CryptoJS from "crypto-js";
 import * as XLSX from "xlsx";
 import dayjs, { Dayjs } from "dayjs";
 
+
+import { Card, Row, Col, Typography } from "antd";
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
+
+
+
+
+
+
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -199,6 +223,116 @@ const UsersVersion12: React.FC = () => {
   const unique = (arr: string[]) =>
     Array.from(new Set(arr)).sort();
 
+
+
+
+// Dashboard analytics — derived from currently filtered users
+const totalUsers = filteredUsers.length;
+
+const collegesCovered = new Set(
+  filteredUsers
+    .map((u) => u.college?.trim())
+    .filter((value) => value && value.toLowerCase() !== "unknown")
+).size;
+
+const branchesCovered = new Set(
+  filteredUsers
+    .map((u) => u.branch?.trim())
+    .filter((value) => value && value.toLowerCase() !== "unknown")
+).size;
+
+// New registrations during the last 30 days, based on all loaded users
+const thirtyDaysAgo = dayjs().subtract(29, "day").startOf("day");
+
+const newUsersLast30Days = users.filter((u) => {
+  const date = dayjs(u.registrationDate, "YYYY-MM-DD", true);
+
+  return (
+    date.isValid() &&
+    !date.isBefore(thirtyDaysAgo, "day") &&
+    !date.isAfter(dayjs(), "day")
+  );
+}).length;
+
+// Count registrations by academic year
+const yearChartData = Object.entries(
+  filteredUsers.reduce<Record<string, number>>((acc, user) => {
+    const year = user.year?.trim() || "Unknown";
+    acc[year] = (acc[year] || 0) + 1;
+    return acc;
+  }, {})
+)
+  .map(([name, users]) => ({ name, users }))
+  .sort((a, b) => b.users - a.users);
+
+// Count registrations by branch
+const branchChartData = Object.entries(
+  filteredUsers.reduce<Record<string, number>>((acc, user) => {
+    const branch = user.branch?.trim() || "Unknown";
+    acc[branch] = (acc[branch] || 0) + 1;
+    return acc;
+  }, {})
+)
+  .map(([name, users]) => ({ name, users }))
+  .sort((a, b) => b.users - a.users)
+  .slice(0, 10);
+
+// Top 10 colleges by registrations
+const collegeChartData = Object.entries(
+  filteredUsers.reduce<Record<string, number>>((acc, user) => {
+    const college = user.college?.trim() || "Unknown";
+    acc[college] = (acc[college] || 0) + 1;
+    return acc;
+  }, {})
+)
+  .map(([name, users]) => ({ name, users }))
+  .sort((a, b) => b.users - a.users)
+  .slice(0, 10);
+
+// Daily registration trend
+const registrationTrendData = Object.entries(
+  filteredUsers.reduce<Record<string, number>>((acc, user) => {
+    const date = dayjs(user.registrationDate, "YYYY-MM-DD", true);
+
+    if (date.isValid()) {
+      const day = date.format("YYYY-MM-DD");
+      acc[day] = (acc[day] || 0) + 1;
+    }
+
+    return acc;
+  }, {})
+)
+  .map(([date, registrations]) => ({
+    date,
+    label: dayjs(date).format("DD MMM"),
+    registrations,
+  }))
+  .sort((a, b) => a.date.localeCompare(b.date));
+
+// Missing profile information
+const incompleteProfiles = filteredUsers.filter(
+  (u) =>
+    !u.college?.trim() ||
+    !u.branch?.trim() ||
+    !u.year?.trim()
+).length;
+
+const chartColors = [
+  "#1677ff",
+  "#52c41a",
+  "#faad14",
+  "#722ed1",
+  "#eb2f96",
+  "#13c2c2",
+  "#fa541c",
+  "#2f54eb",
+  "#a0d911",
+  "#f759ab",
+];
+
+
+
+
   const columns = [
     { title: "Name", dataIndex: "name", key: "name" },
     { title: "Year", dataIndex: "year", key: "year" },
@@ -326,6 +460,245 @@ const UsersVersion12: React.FC = () => {
           onClick={resetFilters}
         />
       </div>
+
+
+{/* ANALYTICS DASHBOARD */}
+<div style={{ marginBottom: 28 }}>
+  <Typography.Title level={4}>
+    User Analytics
+  </Typography.Title>
+
+  <Typography.Paragraph type="secondary">
+    Registration insights based on your current filters.
+  </Typography.Paragraph>
+
+  {/* KPI CARDS */}
+  <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+    <Col xs={24} sm={12} lg={6}>
+      <Card bordered={false} style={{ borderRadius: 12 }}>
+        <Typography.Text type="secondary">
+          Total Users
+        </Typography.Text>
+        <Typography.Title level={2} style={{ margin: "8px 0 0" }}>
+          {totalUsers.toLocaleString()}
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          Matching current filters
+        </Typography.Text>
+      </Card>
+    </Col>
+
+    <Col xs={24} sm={12} lg={6}>
+      <Card bordered={false} style={{ borderRadius: 12 }}>
+        <Typography.Text type="secondary">
+          New Users · 30 Days
+        </Typography.Text>
+        <Typography.Title level={2} style={{ margin: "8px 0 0", color: "#1677ff" }}>
+          {newUsersLast30Days.toLocaleString()}
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          All loaded users
+        </Typography.Text>
+      </Card>
+    </Col>
+
+    <Col xs={24} sm={12} lg={6}>
+      <Card bordered={false} style={{ borderRadius: 12 }}>
+        <Typography.Text type="secondary">
+          Colleges Covered
+        </Typography.Text>
+        <Typography.Title level={2} style={{ margin: "8px 0 0", color: "#389e0d" }}>
+          {collegesCovered.toLocaleString()}
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          Unique colleges
+        </Typography.Text>
+      </Card>
+    </Col>
+
+    <Col xs={24} sm={12} lg={6}>
+      <Card bordered={false} style={{ borderRadius: 12 }}>
+        <Typography.Text type="secondary">
+          Branches Covered
+        </Typography.Text>
+        <Typography.Title level={2} style={{ margin: "8px 0 0", color: "#722ed1" }}>
+          {branchesCovered.toLocaleString()}
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          Unique branches
+        </Typography.Text>
+      </Card>
+    </Col>
+  </Row>
+
+  {/* REGISTRATION TREND */}
+  <Card
+    title="Registration Trend"
+    bordered={false}
+    style={{ marginBottom: 20, borderRadius: 12 }}
+  >
+    {registrationTrendData.length === 0 ? (
+      <Typography.Text type="secondary">
+        No valid registration dates available for the selected filters.
+      </Typography.Text>
+    ) : (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={registrationTrendData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="label" minTickGap={20} />
+          <YAxis allowDecimals={false} />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="registrations"
+            name="Registrations"
+            stroke="#1677ff"
+            strokeWidth={3}
+            dot={false}
+            activeDot={{ r: 6 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    )}
+  </Card>
+
+  {/* YEAR + BRANCH CHARTS */}
+  <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+    <Col xs={24} lg={12}>
+      <Card
+        title="Users by Academic Year"
+        bordered={false}
+        style={{ borderRadius: 12 }}
+      >
+        {yearChartData.length === 0 ? (
+          <Typography.Text type="secondary">
+            No year data available.
+          </Typography.Text>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={yearChartData}
+                dataKey="users"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={95}
+                label={({ name, percent }) =>
+                  `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
+                }
+              >
+                {yearChartData.map((entry, index) => (
+                  <Cell
+                    key={entry.name}
+                    fill={chartColors[index % chartColors.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
+      </Card>
+    </Col>
+
+    <Col xs={24} lg={12}>
+      <Card
+        title="Top 10 Branches"
+        bordered={false}
+        style={{ borderRadius: 12 }}
+      >
+        {branchChartData.length === 0 ? (
+          <Typography.Text type="secondary">
+            No branch data available.
+          </Typography.Text>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={branchChartData}
+              layout="vertical"
+              margin={{ left: 10, right: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={110}
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip />
+              <Bar
+                dataKey="users"
+                name="Users"
+                fill="#722ed1"
+                radius={[0, 5, 5, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </Card>
+    </Col>
+  </Row>
+
+  {/* TOP COLLEGES */}
+  <Card
+    title="Top 10 Colleges by Registrations"
+    bordered={false}
+    style={{ marginBottom: 20, borderRadius: 12 }}
+  >
+    {collegeChartData.length === 0 ? (
+      <Typography.Text type="secondary">
+        No college data available.
+      </Typography.Text>
+    ) : (
+      <ResponsiveContainer
+        width="100%"
+        height={Math.max(300, collegeChartData.length * 48)}
+      >
+        <BarChart
+          data={collegeChartData}
+          layout="vertical"
+          margin={{ left: 20, right: 24 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis type="number" allowDecimals={false} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={180}
+            tick={{ fontSize: 11 }}
+          />
+          <Tooltip />
+          <Bar
+            dataKey="users"
+            name="Registered Users"
+            fill="#1677ff"
+            radius={[0, 5, 5, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    )}
+  </Card>
+
+  {/* PROFILE COMPLETENESS */}
+  <Card bordered={false} style={{ borderRadius: 12 }}>
+    <Typography.Text type="secondary">
+      Incomplete Profiles
+    </Typography.Text>
+    <Typography.Title level={3} style={{ margin: "8px 0" }}>
+      {incompleteProfiles.toLocaleString()}
+    </Typography.Title>
+    <Typography.Text type="secondary">
+      Users missing college, branch, or academic year information.
+    </Typography.Text>
+  </Card>
+</div>
+
+
+
 
       {/* Table */}
       {loading ? (
