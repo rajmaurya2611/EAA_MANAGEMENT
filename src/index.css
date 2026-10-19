@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Past rows: keep red even on hover/selected */
+.ant-table-tbody > tr.past-row > td {
+  background-color: #FF7276 !important; /* red bg */
+  color: #ffffff !important;            /* white text */
+}
+
+.ant-table-tbody > tr.past-row:hover > td,
+.ant-table-tbody > tr.past-row.ant-table-row-hover > td,
+.ant-table-tbody > tr.past-row.ant-table-row-selected > td,
+.ant-table-tbody > tr.past-row.ant-table-row-selected:hover > td {
+  background-color: #FF7276 !important; /* keep red */
+  color: #ffffff !important;            /* keep white text */
+}
+
+/* Optional: make borders softer on red rows */
+.ant-table-tbody > tr.past-row > td {
+  border-color: rgba(255,255,255,0.3) !important;
+}

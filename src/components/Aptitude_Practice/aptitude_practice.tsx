@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import NewNotes from '../components/Notes/NewNotes'; // Import NewNote component
-import ManageNotes from '../components/Notes/ManageNotes'; // Import ManageNotes component
+import NewAptitudePractice from './newaptitude_practice'; // Import NewCarousel component // Import ManageCarousel component
+import ManageAptitudePractice from './manage_aptitudepractice';
 
 const { Content } = Layout;
 
-function Notes() {
+function AptitudePractice() {
   const [activeTab, setActiveTab] = useState('new'); // Track selected tab ('new' or 'manage')
 
   // Handle click for New and Manage options
@@ -24,7 +24,7 @@ function Notes() {
           borderRadius: '8px',
         }}
       >
-        <h1>Notes</h1>
+        <h1>Aptitude Practice</h1>
 
         {/* Minimalistic Navbar with "New" and "Manage" options */}
         <Menu
@@ -37,12 +37,12 @@ function Notes() {
           <Menu.Item key="manage">Manage</Menu.Item>
         </Menu>
 
-        {/* Render NewNote or ManageNotes based on active tab */}
-        {activeTab === 'new' && <NewNotes />}
-        {activeTab === 'manage' && <ManageNotes />}
+        {/* Render NewCarousel or ManageCarousel based on active tab */}
+        {activeTab === 'new' && <NewAptitudePractice />}
+        {activeTab === 'manage' && <ManageAptitudePractice/>}
       </Content>
     </Layout>
   );
 }
 
-export default Notes;
+export default AptitudePractice;

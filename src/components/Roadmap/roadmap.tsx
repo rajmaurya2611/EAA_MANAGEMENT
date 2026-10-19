@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import NewCarousel from '../components/Carousel/NewCarousel'; // Import NewCarousel component
-import ManageCarousel from '../components/Carousel/ManageCarousel'; // Import ManageCarousel component
+import NewRoadmap from './newroadmap'; // Import NewCarousel component
+import ManageRoadmap from './manageroadmap'; // Import ManageCarousel component
 
 const { Content } = Layout;
 
-function Carousel() {
+function Roadmap() {
   const [activeTab, setActiveTab] = useState('new'); // Track selected tab ('new' or 'manage')
 
   // Handle click for New and Manage options
@@ -24,7 +24,7 @@ function Carousel() {
           borderRadius: '8px',
         }}
       >
-        <h1>Carousel</h1>
+        <h1>Roadmap</h1>
 
         {/* Minimalistic Navbar with "New" and "Manage" options */}
         <Menu
@@ -38,11 +38,11 @@ function Carousel() {
         </Menu>
 
         {/* Render NewCarousel or ManageCarousel based on active tab */}
-        {activeTab === 'new' && <NewCarousel />}
-        {activeTab === 'manage' && <ManageCarousel />}
+        {activeTab === 'new' && <NewRoadmap />}
+        {activeTab === 'manage' && <ManageRoadmap/>}
       </Content>
     </Layout>
   );
 }
 
-export default Carousel;
+export default Roadmap;
