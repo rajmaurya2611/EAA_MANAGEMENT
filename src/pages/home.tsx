@@ -50,6 +50,7 @@ import InterviewQuestionsAdmin from '../components/New_Interview_Module/intervie
 import PublishedRequestsAdmin from '../components/UserRequests/PublishedRequestsAdmin';
 import UserRequestsAdmin from '../components/UserRequests/Userrequestsadmin';
 import MaterialsAdmin from '../components/MaterialV2/MaterialsAdmin';
+import AktuNoticesDashboard from '../components/AktuNoticesDashboard';
 
 const { Content, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -71,6 +72,7 @@ const Home: React.FC = () => {
 
   const navItems: NavItem[] = [
     { key: 'dashboard', label: 'Dashboard', icon: <UserOutlined /> },
+    { key: 'aktuNotices', label: 'AKTU Notices', icon: <FileTextOutlined /> },
     {
       key: 'Users',
       label: 'Users',
@@ -284,6 +286,7 @@ const Home: React.FC = () => {
             }}
           >
             {activeView === 'dashboard' && <Dashboard />}
+            {activeView === 'aktuNotices' && <AktuNoticesDashboard />}
             {activeView === 'usersV12' && <UsersVersion12 />}
             {activeView === 'usersOld' && <UsersOld />}
             {activeView === 'carousel' && <Carousel />}
